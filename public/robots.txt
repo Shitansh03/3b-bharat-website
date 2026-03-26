@@ -1,0 +1,12 @@
+# 3D Bharat - robots.txt
+# https://www.robotstxt.org/robotstxt.html
+
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://3dbharat.com/sitemap.xml
+
+# Disallow admin or private paths if any
+Disallow: /api/
+Disallow: /*.json$
