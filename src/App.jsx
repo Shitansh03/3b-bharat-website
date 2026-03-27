@@ -20,6 +20,10 @@ import {
   useRegistrationModal,
 } from "./context/RegistrationModalContext";
 import RegistrationModal from "./components/RegistrationModal";
+import InspectionPage from "./components/InspectionPage";
+import DesignWorkPage from "./components/DesignWorkPage";
+import MonitoringPage from "./components/MonitoringPage";
+
 
 // Lazy load heavy page components for better initial load performance
 const Measurement = lazy(() => import("./components/measurenment/Measurement"));
@@ -33,7 +37,7 @@ const PageLoader = () => (
   </div>
 );
 
-// Component to handle scrolling to hash sections
+// Component to handle scrolling to hash sections and scroll-to-top on route change
 const ScrollToHash = () => {
   const location = useLocation();
 
@@ -46,6 +50,9 @@ const ScrollToHash = () => {
           element.scrollIntoView({ behavior: "smooth" });
         }
       }, 100);
+    } else {
+      // Scroll to top on route change (no hash)
+      window.scrollTo(0, 0);
     }
   }, [location]);
 
@@ -70,14 +77,17 @@ const HomePage = () => {
 // Inner component that can access the registration modal context
 const AppContent = () => {
   const { isOpen, closeModal } = useRegistrationModal();
+  const location = useLocation();
+  const isHome = location.pathname === "/";
+
   return (
     <>
       <div className="min-h-screen bg-stone-100 dark:bg-black text-gray-800 dark:text-white transition-colors duration-300">
         {/* Shared Navbar */}
         <Navbar />
 
-        {/* Page Content */}
-        <main id="main-content">
+        {/* Page Content - add top padding on non-home pages to offset fixed navbar */}
+        <main id="main-content" className={isHome ? "" : "pt-20"}>
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route
@@ -104,6 +114,9 @@ const AppContent = () => {
                 </Suspense>
               }
             />
+            <Route path="/modules/inspection" element={<InspectionPage />} />
+            <Route path="/modules/design" element={<DesignWorkPage />} />
+            <Route path="/modules/monitoring" element={<MonitoringPage />} />
           </Routes>
         </main>
 

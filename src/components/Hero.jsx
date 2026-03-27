@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import VideoShowcase from "./VideoShowcase";
 import { useRegistrationModal } from "../context/RegistrationModalContext";
+import ModulesShowcase from "./ModulesShowcase";
 
 const backgroundVideos = [
   "/video/header-video1.mp4",
@@ -139,6 +140,10 @@ const Hero = () => {
           >
             Learn More
           </motion.a>
+           {/* ── Modules Button ── */}
+  <ModulesShowcase />
+
+
         </motion.div>
       </div>
 
