@@ -21,9 +21,39 @@ import {
   Loader2,
   Download,
   AlertTriangle,
+  Globe,
 } from "lucide-react";
 import { registerUser, verifyOtp } from "../services/auth";
+import { detectUserRegion } from "../services/geoService";
 import { useRegistrationModal } from "../context/RegistrationModalContext";
+import { useLoginModal } from "../context/LoginModalContext";
+
+// Common country codes for the picker
+const COUNTRY_CODES = [
+  { code: "+91", country: "IN", label: "India (+91)" },
+  { code: "+1", country: "US", label: "USA (+1)" },
+  { code: "+44", country: "GB", label: "UK (+44)" },
+  { code: "+971", country: "AE", label: "UAE (+971)" },
+  { code: "+61", country: "AU", label: "Australia (+61)" },
+  { code: "+49", country: "DE", label: "Germany (+49)" },
+  { code: "+33", country: "FR", label: "France (+33)" },
+  { code: "+81", country: "JP", label: "Japan (+81)" },
+  { code: "+86", country: "CN", label: "China (+86)" },
+  { code: "+65", country: "SG", label: "Singapore (+65)" },
+  { code: "+966", country: "SA", label: "Saudi Arabia (+966)" },
+  { code: "+974", country: "QA", label: "Qatar (+974)" },
+  { code: "+968", country: "OM", label: "Oman (+968)" },
+  { code: "+977", country: "NP", label: "Nepal (+977)" },
+  { code: "+94", country: "LK", label: "Sri Lanka (+94)" },
+  { code: "+880", country: "BD", label: "Bangladesh (+880)" },
+  { code: "+60", country: "MY", label: "Malaysia (+60)" },
+  { code: "+82", country: "KR", label: "South Korea (+82)" },
+  { code: "+7", country: "RU", label: "Russia (+7)" },
+  { code: "+55", country: "BR", label: "Brazil (+55)" },
+  { code: "+27", country: "ZA", label: "South Africa (+27)" },
+  { code: "+234", country: "NG", label: "Nigeria (+234)" },
+  { code: "+254", country: "KE", label: "Kenya (+254)" },
+];
 
 // Category → download URL mapping
 const CATEGORY_DOWNLOADS = {
@@ -222,6 +252,7 @@ const AgeLimitWarningModal = ({ isOpen, onClose, message }) => {
 
 const RegistrationModal = ({ isOpen, onClose }) => {
   const { selectedCategory } = useRegistrationModal();
+  const { openModal: openLoginModal } = useLoginModal();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [direction, setDirection] = useState(1);
@@ -241,6 +272,7 @@ const RegistrationModal = ({ isOpen, onClose }) => {
     dob: "",
     email: "",
     mobile: "",
+    countryCode: "+91",
     role: "", // "student" or "industry"
     collegeName: "",
     universityName: "",
@@ -252,6 +284,17 @@ const RegistrationModal = ({ isOpen, onClose }) => {
     otp: "",
   });
   const [errors, setErrors] = useState({});
+
+  // Auto-detect country code via geo-detection
+  useEffect(() => {
+    if (isOpen) {
+      detectUserRegion().then((region) => {
+        if (region?.isIndian) {
+          setFormData((prev) => ({ ...prev, countryCode: "+91" }));
+        }
+      });
+    }
+  }, [isOpen]);
 
   // OTP countdown timer
   useEffect(() => {
@@ -295,6 +338,7 @@ const RegistrationModal = ({ isOpen, onClose }) => {
           dob: "",
           email: "",
           mobile: "",
+          countryCode: "+91",
           role: "",
           collegeName: "",
           universityName: "",
@@ -336,8 +380,10 @@ const RegistrationModal = ({ isOpen, onClose }) => {
         newErrors.email = "Invalid email format";
       if (!formData.mobile.trim())
         newErrors.mobile = "Mobile number is required";
-      else if (!/^\d{10}$/.test(formData.mobile))
-        newErrors.mobile = "Enter valid 10-digit number";
+      else if (!/^\d{7,15}$/.test(formData.mobile))
+        newErrors.mobile = "Enter a valid mobile number";
+      if (!formData.countryCode)
+        newErrors.countryCode = "Country code is required";
     }
     if (currentStep === 2) {
       if (!formData.role) newErrors.role = "Please select your role";
@@ -448,7 +494,10 @@ const RegistrationModal = ({ isOpen, onClose }) => {
 
   const handleSuccessClose = () => {
     onClose();
-    navigate("/");
+    // After registration, open login modal for the user to sign in
+    setTimeout(() => {
+      openLoginModal();
+    }, 300);
   };
 
   const slideVariants = {
@@ -640,15 +689,48 @@ This is a fully funtional demo for your kind evaluation and education purpose.<b
                       onChange={handleInputChange}
                       error={errors.email}
                     />
-                    <FloatingInput
-                      icon={Phone}
-                      label="Mobile Number"
-                      type="tel"
-                      name="mobile"
-                      value={formData.mobile}
-                      onChange={handleInputChange}
-                      error={errors.mobile}
-                    />
+                    {/* Country Code + Mobile Number */}
+                    <div className="space-y-1">
+                      <div className="flex gap-2">
+                        {/* Country Code Selector */}
+                        <div className="relative pt-2 w-[140px] flex-shrink-0">
+                          <div
+                            className={`relative flex items-center gap-2 px-3 py-3 rounded-xl border-2 transition-all duration-300
+                            ${errors.countryCode
+                              ? "border-red-400 dark:border-red-500 bg-red-50/50 dark:bg-red-500/5"
+                              : "border-gray-300 dark:border-white/15 bg-white/50 dark:bg-white/5 hover:border-gray-400 dark:hover:border-white/25"
+                            }`}
+                          >
+                            <Globe className="w-4 h-4 flex-shrink-0 text-gray-400 dark:text-gray-500" />
+                            <select
+                              name="countryCode"
+                              value={formData.countryCode}
+                              onChange={handleInputChange}
+                              className="w-full bg-transparent text-gray-800 dark:text-white text-sm outline-none appearance-none cursor-pointer"
+                            >
+                              {COUNTRY_CODES.map((cc) => (
+                                <option key={cc.code} value={cc.code} className="bg-white dark:bg-gray-900">
+                                  {cc.code}
+                                </option>
+                              ))}
+                            </select>
+                            <ChevronRight className="w-3 h-3 rotate-90 text-gray-400 flex-shrink-0" />
+                          </div>
+                        </div>
+                        {/* Mobile Number */}
+                        <div className="flex-1">
+                          <FloatingInput
+                            icon={Phone}
+                            label="Mobile Number"
+                            type="tel"
+                            name="mobile"
+                            value={formData.mobile}
+                            onChange={handleInputChange}
+                            error={errors.mobile}
+                          />
+                        </div>
+                      </div>
+                    </div>
                     <motion.a
                       href="/manual.pdf"
                       download

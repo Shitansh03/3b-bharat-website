@@ -12,17 +12,16 @@ import { request } from "../api";
  *   "user_date_of_birth": "2000-01-01",
  *   "user_email_id": "om.ro@example.com",
  *   "user_mob_no": "7219035526",
- *   "user_type": 1,              // 1 = student, 2 = industry
- *   "terms_and_conditions": true,
+ *   "country_code": "+91",
+ *   "user_type": 1,              // 1 = student, 2 = employee
+ *   "terms_and_conditions": 1,
  *   "student_data": {             // present when user_type = 1
  *     "college_name": "...",
- *     "university_name": "...",
- *     "city": "..."
+ *     "university_name": "..."
  *   },
- *   "industry_data": {            // present when user_type = 2
+ *   "employee_data": {            // present when user_type = 2
  *     "designation": "...",
- *     "organization_name": "...",
- *     "city": "..."
+ *     "org_name": "..."
  *   }
  * }
  */
@@ -33,21 +32,20 @@ export const registerUser = async (formData) => {
     user_date_of_birth: formData.dob,
     user_email_id: formData.email,
     user_mob_no: formData.mobile,
+    country_code: formData.countryCode || "+91",
     user_type: formData.role === "student" ? 1 : 2,
-    terms_and_conditions: formData.termsAccepted,
+    terms_and_conditions: 1,
   };
 
   if (formData.role === "student") {
     payload.student_data = {
       college_name: formData.collegeName,
       university_name: formData.universityName,
-      city: formData.city,
     };
   } else if (formData.role === "industry") {
-    payload.industry_data = {
+    payload.employee_data = {
       designation: formData.designation,
-      organization_name: formData.organizationName,
-      city: formData.city,
+      org_name: formData.organizationName,
     };
   }
 
@@ -58,14 +56,31 @@ export const registerUser = async (formData) => {
 };
 
 /**
- * Verify the OTP entered by the user
+ * Generate OTP for a mobile number
  * @param {string} mobile - User mobile number
- * @param {string} otp - 4-digit OTP code
  * @returns {Promise<Object>}
  */
-export const verifyOtp = async (mobile, otp) => {
+export const generateOtp = async (mobile) => {
+  return request("/user/generate-otp", {
+    method: "POST",
+    body: JSON.stringify({ mobile }),
+  });
+};
+
+/**
+ * Verify the OTP entered by the user
+ * @param {Object} params - { mobile, otp } or { euh_id, otp }
+ * @returns {Promise<Object>}
+ */
+export const verifyOtp = async (mobile, otp, euh_id = null) => {
+  const payload = { otp };
+  if (euh_id) {
+    payload.euh_id = euh_id;
+  } else {
+    payload.mobile = mobile;
+  }
   return request("/user/verify-otp", {
     method: "POST",
-    body: JSON.stringify({ mobile, otp }),
+    body: JSON.stringify(payload),
   });
 };

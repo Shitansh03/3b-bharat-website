@@ -1,1 +1,2 @@
-export { registerUser, verifyOtp } from "./registerService";
+export { registerUser, verifyOtp, generateOtp } from "./registerService";
+export { eduLoginUser } from "./loginService";

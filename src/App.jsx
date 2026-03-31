@@ -19,7 +19,10 @@ import {
   RegistrationModalProvider,
   useRegistrationModal,
 } from "./context/RegistrationModalContext";
+import { LoginModalProvider, useLoginModal } from "./context/LoginModalContext";
+import { AuthProvider } from "./context/AuthContext";
 import RegistrationModal from "./components/RegistrationModal";
+import LoginModal from "./components/LoginModal";
 import InspectionPage from "./components/InspectionPage";
 import DesignWorkPage from "./components/DesignWorkPage";
 import MonitoringPage from "./components/MonitoringPage";
@@ -29,6 +32,8 @@ import MonitoringPage from "./components/MonitoringPage";
 const Measurement = lazy(() => import("./components/measurenment/Measurement"));
 const Videos = lazy(() => import("./components/videos/Videos"));
 const PaymentGateway = lazy(() => import("./components/payment/PaymentGateway"));
+const PurchaseDashboard = lazy(() => import("./components/PurchaseDashboard"));
+const EduLoginPage = lazy(() => import("./components/EduLoginPage"));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -77,6 +82,7 @@ const HomePage = () => {
 // Inner component that can access the registration modal context
 const AppContent = () => {
   const { isOpen, closeModal } = useRegistrationModal();
+  const { isOpen: isLoginOpen, closeModal: closeLoginModal } = useLoginModal();
   const location = useLocation();
   const isHome = location.pathname === "/";
 
@@ -114,9 +120,25 @@ const AppContent = () => {
                 </Suspense>
               }
             />
+            <Route
+              path="/dashboard"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <PurchaseDashboard />
+                </Suspense>
+              }
+            />
             <Route path="/modules/inspection" element={<InspectionPage />} />
             <Route path="/modules/design" element={<DesignWorkPage />} />
             <Route path="/modules/monitoring" element={<MonitoringPage />} />
+            <Route
+              path="/edu-login/:userId/:fileIds"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <EduLoginPage />
+                </Suspense>
+              }
+            />
           </Routes>
         </main>
 
@@ -126,6 +148,8 @@ const AppContent = () => {
       </div>
       {/* Registration Modal */}
       <RegistrationModal isOpen={isOpen} onClose={closeModal} />
+      {/* Login Modal */}
+      <LoginModal />
     </>
   );
 };
@@ -133,12 +157,16 @@ const AppContent = () => {
 function App() {
   return (
     <ThemeProvider>
-      <RegistrationModalProvider>
-        <Router>
-          <ScrollToHash />
-          <AppContent />
-        </Router>
-      </RegistrationModalProvider>
+      <AuthProvider>
+        <RegistrationModalProvider>
+          <LoginModalProvider>
+            <Router>
+              <ScrollToHash />
+              <AppContent />
+            </Router>
+          </LoginModalProvider>
+        </RegistrationModalProvider>
+      </AuthProvider>
     </ThemeProvider>
   );
 }

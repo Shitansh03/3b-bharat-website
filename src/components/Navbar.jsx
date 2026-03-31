@@ -1,9 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ChevronDown, LogIn, LogOut, User } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import { useTheme } from "../context/ThemeContext";
 import { useRegistrationModal } from "../context/RegistrationModalContext";
+import { useLoginModal } from "../context/LoginModalContext";
+import { useAuth } from "../context/AuthContext";
 
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -13,6 +16,8 @@ const Navbar = () => {
   const trialsRef = useRef(null);
   const { isDark } = useTheme();
   const { openModal } = useRegistrationModal();
+  const { openModal: openLoginModal } = useLoginModal();
+  const { isAuthenticated, user, logout } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -152,17 +157,51 @@ const Navbar = () => {
             {/* Theme Toggle */}
             <ThemeToggle />
 
-            <motion.a
-              href="/#enquiry"
-              className={`px-6 py-2.5 border rounded-lg text-sm font-medium transition-all duration-300 ${scrolled ? "border-gray-400 dark:border-white/30 text-gray-700 dark:text-white hover:bg-gray-800 hover:text-white dark:hover:bg-white dark:hover:text-black" : "border-white/50 text-white hover:bg-white/20"}`}
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4, duration: 0.4 }}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              Get Started
-            </motion.a>
+            {/* Auth Buttons */}
+            {isAuthenticated ? (
+              <div className="flex items-center gap-3">
+                <Link to="/dashboard" className={`flex items-center gap-2 px-3 py-1.5 rounded-lg hover:ring-2 hover:ring-amber-400/30 transition-all ${scrolled ? "bg-gray-100 dark:bg-white/10" : "bg-white/10"}`}>
+                  <User className={`w-4 h-4 ${scrolled ? "text-gray-600 dark:text-gray-300" : "text-white/80"}`} />
+                  <span className={`text-sm font-medium ${scrolled ? "text-gray-700 dark:text-gray-200" : "text-white/90"}`}>
+                    {user?.first_name || "User"}
+                  </span>
+                </Link>
+                <motion.button
+                  onClick={logout}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${scrolled ? "border border-gray-400 dark:border-white/30 text-gray-700 dark:text-white hover:bg-red-50 hover:border-red-300 hover:text-red-600 dark:hover:bg-red-500/10 dark:hover:border-red-500/30 dark:hover:text-red-400" : "border border-white/50 text-white hover:bg-red-500/20 hover:border-red-400/50"}`}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <LogOut className="w-4 h-4" />
+                  Logout
+                </motion.button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                <motion.button
+                  onClick={openLoginModal}
+                  className={`flex items-center gap-1.5 px-5 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 ${scrolled ? "text-gray-700 dark:text-white hover:text-amber-600 dark:hover:text-amber-400" : "text-white/90 hover:text-white"}`}
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.35, duration: 0.4 }}
+                  whileHover={{ y: -2 }}
+                >
+                  <LogIn className="w-4 h-4" />
+                  Login
+                </motion.button>
+                <motion.a
+                  href="/#enquiry"
+                  className={`px-6 py-2.5 border rounded-lg text-sm font-medium transition-all duration-300 ${scrolled ? "border-gray-400 dark:border-white/30 text-gray-700 dark:text-white hover:bg-gray-800 hover:text-white dark:hover:bg-white dark:hover:text-black" : "border-white/50 text-white hover:bg-white/20"}`}
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4, duration: 0.4 }}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Get Started
+                </motion.a>
+              </div>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -256,14 +295,44 @@ const Navbar = () => {
               </AnimatePresence>
             </div>
 
-            <a
-              href="/#enquiry"
-              className="inline-block px-6 py-2.5 border border-gray-400 dark:border-white/30 rounded-lg text-sm font-medium
-                         text-gray-700 dark:text-white hover:bg-gray-800 hover:text-white dark:hover:bg-white dark:hover:text-black transition-all duration-300"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Get Started
-            </a>
+            {isAuthenticated ? (
+              <>
+                <Link
+                  to="/dashboard"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-amber-600 dark:hover:text-amber-400 transition-colors py-2"
+                >
+                  <User className="w-4 h-4" />
+                  My Dashboard
+                </Link>
+                <button
+                  onClick={() => { logout(); setMobileMenuOpen(false); }}
+                  className="flex items-center gap-2 px-6 py-2.5 border border-red-300 dark:border-red-500/30 rounded-lg text-sm font-medium
+                             text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all duration-300"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Logout
+                </button>
+              </>
+            ) : (
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={() => { openLoginModal(); setMobileMenuOpen(false); }}
+                  className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-amber-600 dark:hover:text-amber-400 transition-colors py-2"
+                >
+                  <LogIn className="w-4 h-4" />
+                  Login
+                </button>
+                <a
+                  href="/#enquiry"
+                  className="inline-block px-6 py-2.5 border border-gray-400 dark:border-white/30 rounded-lg text-sm font-medium
+                             text-gray-700 dark:text-white hover:bg-gray-800 hover:text-white dark:hover:bg-white dark:hover:text-black transition-all duration-300"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Get Started
+                </a>
+              </div>
+            )}
           </div>
         </motion.div>
       </div>
