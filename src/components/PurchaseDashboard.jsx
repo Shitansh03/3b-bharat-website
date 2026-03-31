@@ -324,7 +324,7 @@ const FileCard = ({ file }) => {
             </span>
           ) : (
             <motion.button
-              onClick={() => navigate("/payment")}
+              onClick={() => navigate("/payment", { state: { tch_id: file.tch_id, files: [file.id] } })}
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-white
                 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600
                 shadow-md shadow-amber-500/20 hover:shadow-amber-500/40
@@ -487,8 +487,9 @@ const PurchaseDashboard = () => {
     (purchases?.app_purchases?.count || 0);
   const totalPurchases = totalFilePurchases + totalAppPurchases;
 
-  const unpurchasedFiles = availableFiles.filter((f) => !f.purchased);
-  const purchasedFiles = availableFiles.filter((f) => f.purchased);
+  const filesToShow = linkedFileIds.length > 0 ? linkedFiles : availableFiles;
+  const unpurchasedFiles = filesToShow.filter((f) => !f.purchased);
+  const purchasedFiles = filesToShow.filter((f) => f.purchased);
 
   if (!isAuthenticated) return null;
 

@@ -1,11 +1,11 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Shield,
   CreditCard,
   User,
   Mail,
-  Phone,
   XCircle,
   ArrowLeft,
   Lock,
@@ -14,65 +14,108 @@ import {
   CheckCheck,
   RotateCcw,
   Home,
-  Zap,
+  Tag
 } from "lucide-react";
-
-// Static user & payment data (will come from params in future)
-const STATIC_DATA = {
-  user: {
-    name: "Vedant Bahadure",
-    email: "vedant@example.com",
-    phone: "9876543210",
-  },
-  payment: {
-    description: "3D Bharat Premium Subscription",
-    subtotal: 4999,
-    gst: 899.82,
-    get total() {
-      return this.subtotal + this.gst;
-    },
-    currency: "INR",
-  },
-};
+import { useAuth } from "../../context/AuthContext";
+import { createPurchaseOrder, getPurchaseStatus } from "../../services/paymentService";
 
 const formatCurrency = (amount) =>
-  `₹${amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
+  `₹${(amount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
 
 const PaymentGateway = () => {
-  const [paymentStatus, setPaymentStatus] = useState("idle");
+  const { user } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const [paymentStatus, setPaymentStatus] = useState("idle"); // 'idle' | 'loading_order' | 'processing' | 'success' | 'failure'
   const [paymentDetails, setPaymentDetails] = useState(null);
+  const [orderData, setOrderData] = useState(null);
+  const [errorDetails, setErrorDetails] = useState("");
+
+  // Extract from router state
+  const { tch_id, files } = location.state || {};
+  const trial_user_id = user?.id;
+
+  // Form state for typeable inputs
+  const [formData, setFormData] = useState({
+    name: user?.first_name ? `${user.first_name} ${user.last_name || ""}` : "",
+    email: user?.user_email_id || "",
+    phone: user?.user_mob_no || "",
+  });
+
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        name: user.first_name ? `${user.first_name} ${user.last_name || ""}` : "",
+        email: user.user_email_id || "",
+        phone: user.user_mob_no || "",
+      });
+    }
+  }, [user]);
+
+  // Create pending order on mount
+  useEffect(() => {
+    if (!trial_user_id || !tch_id || !files || files.length === 0) {
+      return;
+    }
+
+    const fetchOrder = async () => {
+      setPaymentStatus("loading_order");
+      try {
+        const response = await createPurchaseOrder({
+          trial_user_id,
+          tch_id,
+          files,
+          customer_name: formData.name,
+          customer_email: formData.email
+        });
+        if (response?.data) {
+          setOrderData(response.data);
+          setPaymentStatus("idle");
+        } else {
+          setErrorDetails("Failed to fetch order details.");
+          setPaymentStatus("failure");
+        }
+      } catch (err) {
+        console.error("Error creating order:", err);
+        setErrorDetails(err?.message || "Something went wrong.");
+        setPaymentStatus("failure");
+      }
+    };
+
+    fetchOrder();
+  }, [trial_user_id, tch_id, files]); // formData dependency removed to not trigger on every keystroke
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handlePayment = useCallback(() => {
-    const razorpayKeyId = import.meta.env.VITE_RAZORPAY_KEY_ID;
-
-    if (!razorpayKeyId || !window.Razorpay) {
-      console.error("Razorpay not configured properly.");
+    if (!orderData) return;
+    if (!window.Razorpay) {
+      setErrorDetails("Razorpay SDK not loaded");
       setPaymentStatus("failure");
       return;
     }
 
-    setPaymentStatus("processing");
-
     const options = {
-      key: razorpayKeyId,
-      amount: Math.round(STATIC_DATA.payment.total * 100),
-      currency: STATIC_DATA.payment.currency,
+      key: orderData.razorpay_key,
+      amount: Math.round(orderData.total_paid_amt * 100),
+      currency: orderData.currency || "INR",
       name: "3D Bharat",
-      description: STATIC_DATA.payment.description,
+      description: "3D Files Purchase",
+      order_id: orderData.razorpay_order_id,
       image: "/favicon.ico",
       prefill: {
-        name: STATIC_DATA.user.name,
-        email: STATIC_DATA.user.email,
-        contact: STATIC_DATA.user.phone,
+        name: formData.name,
+        email: formData.email,
+        contact: formData.phone,
       },
       theme: { color: "#1a1a2e", backdrop_color: "rgba(0,0,0,0.6)" },
-      handler: (response) => {
-        setPaymentDetails({
-          paymentId: response.razorpay_payment_id,
-          orderId: response.razorpay_order_id || "N/A",
-          signature: response.razorpay_signature || "N/A",
-        });
-        setPaymentStatus("success");
+      handler: async (response) => {
+        setPaymentStatus("processing");
+        verifyStatus(orderData.purchase_id);
       },
       modal: {
         ondismiss: () => setPaymentStatus("idle"),
@@ -84,22 +127,54 @@ const PaymentGateway = () => {
     try {
       const rzp = new window.Razorpay(options);
       rzp.on("payment.failed", (response) => {
-        setPaymentDetails({
-          errorCode: response.error.code,
-          errorDescription: response.error.description,
-        });
+        setErrorDetails(response.error.description);
         setPaymentStatus("failure");
       });
       rzp.open();
     } catch {
+      setErrorDetails("Could not open Razorpay");
       setPaymentStatus("failure");
     }
-  }, []);
+  }, [orderData, formData]);
+
+  const verifyStatus = (purchaseId) => {
+    const interval = setInterval(async () => {
+      try {
+        const res = await getPurchaseStatus(purchaseId);
+        if (res.data.status === "received") {
+          clearInterval(interval);
+          setPaymentDetails(res.data);
+          setPaymentStatus("success");
+        } else if (res.data.status === "failed") {
+          clearInterval(interval);
+          setErrorDetails("Payment failed on verification.");
+          setPaymentStatus("failure");
+        }
+      } catch (err) {
+        console.error("Status verification error", err);
+      }
+    }, 3000);
+  };
 
   const resetPayment = () => {
     setPaymentStatus("idle");
     setPaymentDetails(null);
+    setErrorDetails("");
+    if (!orderData) {
+      window.location.reload();
+    }
   };
+
+  if (!trial_user_id || !files || files.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-950 text-white">
+        <div className="text-center">
+          <h2 className="text-xl font-bold mb-4">Invalid Order Parameters</h2>
+          <button onClick={() => navigate(-1)} className="px-4 py-2 bg-indigo-600 rounded-lg">Go Back</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-gradient-to-b from-gray-950 via-gray-900 to-stone-200 dark:from-black dark:via-gray-950 dark:to-gray-900">
@@ -117,16 +192,32 @@ const PaymentGateway = () => {
           backgroundSize: "60px 60px",
         }}
       />
-
-      {/* Noise texture overlay */}
       <div className="absolute inset-0 opacity-[0.015] pointer-events-none mix-blend-overlay bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIj48ZmlsdGVyIGlkPSJhIiB4PSIwIiB5PSIwIj48ZmVUdXJidWxlbmNlIGJhc2VGcmVxdWVuY3k9Ii43NSIgc3RpdGNoVGlsZXM9InN0aXRjaCIgdHlwZT0iZnJhY3RhbE5vaXNlIi8+PC9maWx0ZXI+PHJlY3Qgd2lkdGg9IjMwMCIgaGVpZ2h0PSIzMDAiIGZpbHRlcj0idXJsKCNhKSIgb3BhY2l0eT0iMC4xNSIvPjwvc3ZnPg==')]" />
 
-      {/* Main content */}
       <div className="relative z-10 min-h-screen flex items-center justify-center px-4 py-24 md:py-28">
         <div className="w-full max-w-md">
           <AnimatePresence mode="wait">
-            {/* ==================== IDLE STATE ==================== */}
-            {paymentStatus === "idle" && (
+
+            {/* ==================== LOADING ORDER STATE ==================== */}
+            {paymentStatus === "loading_order" && (
+              <motion.div
+                key="loading-order"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="rounded-3xl bg-white/[0.05] backdrop-blur-2xl border border-white/[0.08] shadow-2xl p-8 md:p-12 text-center"
+              >
+                <div className="relative w-16 h-16 mx-auto mb-6">
+                  <div className="absolute inset-0 rounded-full border-2 border-white/[0.06]" />
+                  <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-amber-400 animate-spin" />
+                </div>
+                <h2 className="text-xl font-bold text-white mb-2">Preparing Order</h2>
+                <p className="text-white/40 text-sm">Please wait while we secure your checkout...</p>
+              </motion.div>
+            )}
+
+            {/* ==================== IDLE STATE (CHECKOUT) ==================== */}
+            {paymentStatus === "idle" && orderData && (
               <motion.div
                 key="checkout"
                 initial={{ opacity: 0, y: 24, scale: 0.98 }}
@@ -135,17 +226,16 @@ const PaymentGateway = () => {
                 transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
               >
                 {/* Back */}
-                <motion.a
-                  href="/"
-                  className="inline-flex items-center gap-2 text-sm text-white/40 hover:text-white transition-colors mb-8 group"
-                  whileHover={{ x: -4 }}
+                <button
+                  onClick={() => navigate(-1)}
+                  className="inline-flex items-center gap-2 text-sm text-white/40 hover:text-white transition-colors mb-8 group bg-transparent border-none appearance-none cursor-pointer"
                 >
                   <ArrowLeft
                     size={16}
                     className="group-hover:-translate-x-1 transition-transform"
                   />
-                  Back to Home
-                </motion.a>
+                  Back
+                </button>
 
                 {/* Header */}
                 <motion.div
@@ -163,9 +253,6 @@ const PaymentGateway = () => {
                   <h1 className="text-3xl md:text-4xl font-bold font-heading text-white mb-2 tracking-tight">
                     Complete Payment
                   </h1>
-                  <p className="text-white/40 text-sm">
-                    Review your order and proceed to pay
-                  </p>
                 </motion.div>
 
                 {/* Card */}
@@ -181,49 +268,37 @@ const PaymentGateway = () => {
                       Amount to Pay
                     </p>
                     <p className="text-4xl md:text-5xl font-bold font-heading bg-gradient-to-r from-white via-white/90 to-white/60 bg-clip-text text-transparent leading-tight">
-                      {formatCurrency(STATIC_DATA.payment.total)}
+                      {formatCurrency(orderData.total_paid_amt)}
                     </p>
                   </div>
 
                   {/* Divider */}
                   <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mb-6" />
 
-                  {/* Customer Details */}
+                  {/* Customer Details Editable */}
                   <div className="mb-6">
                     <h3 className="text-[10px] uppercase tracking-[0.2em] text-white/25 font-semibold mb-3">
                       Customer Details
                     </h3>
-                    <div className="space-y-0.5">
-                      {[
-                        {
-                          icon: User,
-                          label: "Name",
-                          value: STATIC_DATA.user.name,
-                        },
-                        {
-                          icon: Mail,
-                          label: "Email",
-                          value: STATIC_DATA.user.email,
-                        },
-                        {
-                          icon: Phone,
-                          label: "Phone",
-                          value: `+91 ${STATIC_DATA.user.phone}`,
-                        },
-                      ].map(({ icon: Icon, label, value }) => (
-                        <div
-                          key={label}
-                          className="flex items-center justify-between py-2.5"
-                        >
-                          <span className="flex items-center gap-2.5 text-sm text-white/40 font-medium">
-                            <Icon size={14} className="text-white/20" />
-                            {label}
-                          </span>
-                          <span className="text-sm font-semibold text-white/80">
-                            {value}
-                          </span>
-                        </div>
-                      ))}
+                    <div className="space-y-4">
+                      <div className="flex flex-col gap-1.5">
+                        <span className="flex items-center gap-2.5 text-xs text-white/40 font-medium"><User size={14} className="text-white/20" /> Name</span>
+                        <input
+                          name="name"
+                          value={formData.name}
+                          onChange={handleInputChange}
+                          className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white/80 focus:outline-none focus:border-indigo-500 transition-colors"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <span className="flex items-center gap-2.5 text-xs text-white/40 font-medium"><Mail size={14} className="text-white/20" /> Email</span>
+                        <input
+                          name="email"
+                          value={formData.email}
+                          onChange={handleInputChange}
+                          className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white/80 focus:outline-none focus:border-indigo-500 transition-colors"
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -237,21 +312,32 @@ const PaymentGateway = () => {
                     <div className="space-y-0.5">
                       <div className="flex items-center justify-between py-2.5">
                         <span className="flex items-center gap-2.5 text-sm text-white/40 font-medium">
-                          <Receipt size={14} className="text-white/20" />
-                          {STATIC_DATA.payment.description}
+                          <Tag size={14} className="text-white/20" />
+                          Files Selected
                         </span>
                         <span className="text-sm font-semibold text-white/80">
-                          {formatCurrency(STATIC_DATA.payment.subtotal)}
+                          {files.length} Files
                         </span>
                       </div>
                       <div className="flex items-center justify-between py-2.5">
-                        <span className="text-sm text-white/40 font-medium pl-[26px]">
-                          GST (18%)
+                        <span className="flex items-center gap-2.5 text-sm text-white/40 font-medium">
+                          <Receipt size={14} className="text-white/20" />
+                          Subtotal
                         </span>
                         <span className="text-sm font-semibold text-white/80">
-                          {formatCurrency(STATIC_DATA.payment.gst)}
+                          {formatCurrency(orderData.total_amt)}
                         </span>
                       </div>
+                      {orderData.discount_applied > 0 && (
+                        <div className="flex items-center justify-between py-2.5">
+                          <span className="text-sm text-amber-500/80 font-medium pl-[26px]">
+                            Discount
+                          </span>
+                          <span className="text-sm font-semibold text-amber-400">
+                            -{formatCurrency(orderData.discount_applied)}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -263,7 +349,7 @@ const PaymentGateway = () => {
                       Total Payable
                     </span>
                     <span className="text-xl font-bold text-white font-heading">
-                      {formatCurrency(STATIC_DATA.payment.total)}
+                      {formatCurrency(orderData.total_paid_amt)}
                     </span>
                   </div>
 
@@ -277,7 +363,7 @@ const PaymentGateway = () => {
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
                     <Lock size={18} className="relative z-10" />
                     <span className="relative z-10">
-                      Pay {formatCurrency(STATIC_DATA.payment.total)}
+                      Pay {formatCurrency(orderData.total_paid_amt)}
                     </span>
                   </motion.button>
 
@@ -330,7 +416,7 @@ const PaymentGateway = () => {
                   Processing Payment
                 </h2>
                 <p className="text-white/40 text-sm">
-                  Please complete the payment in the Razorpay window...
+                  Please do not close this window.
                 </p>
               </motion.div>
             )}
@@ -349,31 +435,17 @@ const PaymentGateway = () => {
                   className="w-20 h-20 rounded-full bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center mx-auto mb-6 shadow-lg shadow-emerald-500/30"
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  transition={{
-                    delay: 0.2,
-                    type: "spring",
-                    stiffness: 200,
-                  }}
+                  transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
                 >
                   <CheckCheck size={36} className="text-white" />
                 </motion.div>
 
-                <motion.h2
-                  className="text-2xl font-bold text-white mb-2 font-heading"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                >
+                <h2 className="text-2xl font-bold text-white mb-2 font-heading">
                   Payment Successful!
-                </motion.h2>
-                <motion.p
-                  className="text-white/40 mb-6 text-sm"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.4 }}
-                >
+                </h2>
+                <p className="text-white/40 mb-6 text-sm">
                   Your transaction has been completed successfully.
-                </motion.p>
+                </p>
 
                 {paymentDetails && (
                   <motion.div
@@ -384,8 +456,8 @@ const PaymentGateway = () => {
                   >
                     <div className="flex justify-between items-center py-2">
                       <span className="text-sm text-white/40">Payment ID</span>
-                      <span className="text-xs font-mono text-white/70 font-semibold">
-                        {paymentDetails.paymentId}
+                      <span className="text-xs font-mono text-white/70 font-semibold truncate ml-4">
+                        {paymentDetails.transaction_id || paymentDetails.purchase_id}
                       </span>
                     </div>
                     <div className="flex justify-between items-center py-2">
@@ -393,33 +465,20 @@ const PaymentGateway = () => {
                         Amount Paid
                       </span>
                       <span className="text-sm text-white/80 font-semibold">
-                        {formatCurrency(STATIC_DATA.payment.total)}
+                        {formatCurrency(paymentDetails.total_paid_amt)}
                       </span>
                     </div>
                   </motion.div>
                 )}
 
-                <motion.div
-                  className="flex flex-col sm:flex-row gap-3"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.6 }}
-                >
-                  <a
-                    href="/"
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <button
+                    onClick={() => navigate("/dashboard")}
                     className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-white text-gray-900 font-semibold rounded-xl hover:bg-white/90 transition-colors"
                   >
-                    <Home size={16} />
-                    Back to Home
-                  </a>
-                  <button
-                    onClick={resetPayment}
-                    className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 border border-white/10 text-white/70 font-semibold rounded-xl hover:bg-white/5 transition-colors"
-                  >
-                    <RotateCcw size={16} />
-                    New Payment
+                    Go to Dashboard
                   </button>
-                </motion.div>
+                </div>
               </motion.div>
             )}
 
@@ -437,33 +496,19 @@ const PaymentGateway = () => {
                   className="w-20 h-20 rounded-full bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center mx-auto mb-6 shadow-lg shadow-red-500/30"
                   initial={{ scale: 0, rotate: -180 }}
                   animate={{ scale: 1, rotate: 0 }}
-                  transition={{
-                    delay: 0.2,
-                    type: "spring",
-                    stiffness: 200,
-                  }}
+                  transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
                 >
                   <XCircle size={36} className="text-white" />
                 </motion.div>
 
-                <motion.h2
-                  className="text-2xl font-bold text-white mb-2 font-heading"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                >
+                <h2 className="text-2xl font-bold text-white mb-2 font-heading">
                   Payment Failed
-                </motion.h2>
-                <motion.p
-                  className="text-white/40 mb-6 text-sm"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.4 }}
-                >
+                </h2>
+                <p className="text-white/40 mb-6 text-sm">
                   Something went wrong. Please try again.
-                </motion.p>
+                </p>
 
-                {paymentDetails?.errorDescription && (
+                {errorDetails && (
                   <motion.div
                     className="bg-red-500/[0.08] border border-red-500/15 rounded-xl p-4 mb-6 text-left"
                     initial={{ opacity: 0, y: 10 }}
@@ -471,17 +516,12 @@ const PaymentGateway = () => {
                     transition={{ delay: 0.5 }}
                   >
                     <p className="text-sm text-red-400">
-                      {paymentDetails.errorDescription}
+                      {errorDetails}
                     </p>
                   </motion.div>
                 )}
 
-                <motion.div
-                  className="flex flex-col sm:flex-row gap-3"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.6 }}
-                >
+                <div className="flex flex-col sm:flex-row gap-3">
                   <button
                     onClick={resetPayment}
                     className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-white text-gray-900 font-semibold rounded-xl hover:bg-white/90 transition-colors"
@@ -489,21 +529,20 @@ const PaymentGateway = () => {
                     <RotateCcw size={16} />
                     Try Again
                   </button>
-                  <a
-                    href="/"
+                  <button
+                    onClick={() => navigate("/")}
                     className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 border border-white/10 text-white/70 font-semibold rounded-xl hover:bg-white/5 transition-colors text-center"
                   >
                     <Home size={16} />
                     Go Home
-                  </a>
-                </motion.div>
+                  </button>
+                </div>
               </motion.div>
             )}
+
           </AnimatePresence>
         </div>
       </div>
-
-      {/* Bottom accent line */}
       <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-indigo-500/20 to-transparent" />
     </div>
   );
