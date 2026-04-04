@@ -17,7 +17,7 @@ import {
   Tag
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
-import { createPurchaseOrder, getPurchaseStatus } from "../../services/paymentService";
+import { getPurchaseStatus, createPurchase } from "../../services/paymentService";
 
 const formatCurrency = (amount) =>
   `₹${(amount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
@@ -31,6 +31,8 @@ const PaymentGateway = () => {
   const [paymentDetails, setPaymentDetails] = useState(null);
   const [orderData, setOrderData] = useState(null);
   const [errorDetails, setErrorDetails] = useState("");
+  const [couponCode, setCouponCode] = useState("");
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
 
   // Extract from router state
   const { tch_id, files } = location.state || {};
@@ -53,105 +55,164 @@ const PaymentGateway = () => {
     }
   }, [user]);
 
-  // Create pending order on mount
-  useEffect(() => {
-    if (!trial_user_id || !tch_id || !files || files.length === 0) {
-      return;
-    }
-
-    const fetchOrder = async () => {
-      setPaymentStatus("loading_order");
-      try {
-        const response = await createPurchaseOrder({
-          trial_user_id,
-          tch_id,
-          files,
-          customer_name: formData.name,
-          customer_email: formData.email
-        });
-        if (response?.data) {
-          setOrderData(response.data);
-          setPaymentStatus("idle");
-        } else {
-          setErrorDetails("Failed to fetch order details.");
-          setPaymentStatus("failure");
-        }
-      } catch (err) {
-        console.error("Error creating order:", err);
-        setErrorDetails(err?.message || "Something went wrong.");
-        setPaymentStatus("failure");
-      }
-    };
-
-    fetchOrder();
-  }, [trial_user_id, tch_id, files]); // formData dependency removed to not trigger on every keystroke
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handlePayment = useCallback(() => {
-    if (!orderData) return;
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setIsApplyingCoupon(true);
+    try {
+      const response = await createPurchase({
+        trial_user_id,
+        tch_id,
+        files,
+        coupon_code: couponCode
+      });
+      const order = response?.data || response;
+      if (order && (order.total_amt !== undefined || order.purchase_id)) {
+        setOrderData(order);
+      } else {
+        console.warn("[Payment] Coupon applied but response structure was unexpected:", response);
+      }
+    } catch (err) {
+      console.error("Coupon error:", err);
+    } finally {
+      setIsApplyingCoupon(false);
+    }
+  };
+
+  const handlePayment = useCallback(async () => {
     if (!window.Razorpay) {
       setErrorDetails("Razorpay SDK not loaded");
       setPaymentStatus("failure");
       return;
     }
 
-    const options = {
-      key: orderData.razorpay_key,
-      amount: Math.round(orderData.total_paid_amt * 100),
-      currency: orderData.currency || "INR",
-      name: "3D Bharat",
-      description: "3D Files Purchase",
-      order_id: orderData.razorpay_order_id,
-      image: "/favicon.ico",
-      prefill: {
-        name: formData.name,
-        email: formData.email,
-        contact: formData.phone,
-      },
-      theme: { color: "#1a1a2e", backdrop_color: "rgba(0,0,0,0.6)" },
-      handler: async (response) => {
-        setPaymentStatus("processing");
-        verifyStatus(orderData.purchase_id);
-      },
-      modal: {
-        ondismiss: () => setPaymentStatus("idle"),
-        escape: true,
-        animation: true,
-      },
-    };
+    setPaymentStatus("processing");
 
     try {
+      // Call createPurchase to get the final order with current coupon
+      const response = await createPurchase({
+        trial_user_id,
+        tch_id,
+        files,
+        coupon_code: couponCode
+      });
+
+      // Support both { data: order } and direct order object responses
+      const currentOrder = response?.data || response;
+
+      // Basic validation to ensure we got a valid order object
+      if (!currentOrder || (!currentOrder.razorpay_order_id && currentOrder.total_paid_amt > 0)) {
+        console.error("[Payment] Unexpected API response:", response);
+        throw new Error("Failed to create purchase record: Invalid server response");
+      }
+
+      setOrderData(currentOrder);
+
+      // If amount is 0, handle success immediately
+      if (currentOrder.status === "received" || currentOrder.total_paid_amt === 0) {
+        setPaymentDetails(currentOrder);
+        setPaymentStatus("success");
+        return;
+      }
+
+      const options = {
+        // Use key from backend if provided, otherwise fallback to local env
+        key: currentOrder.razorpay_key || import.meta.env.VITE_RAZORPAY_KEY_ID,
+        amount: Math.round(currentOrder.total_paid_amt * 100),
+        currency: currentOrder.currency || "INR",
+        name: "3D Bharat",
+        description: "3D Files Purchase",
+        order_id: currentOrder.razorpay_order_id,
+        image: "/favicon.ico",
+        prefill: {
+          name: formData.name,
+          email: formData.email,
+          contact: formData.phone,
+        },
+        theme: { color: "#1a1a2e", backdrop_color: "rgba(0,0,0,0.6)" },
+        handler: async (razorpayResponse) => {
+          // razorpayResponse contains razorpay_payment_id, razorpay_order_id, razorpay_signature
+          setPaymentStatus("processing");
+          verifyStatus(
+            currentOrder.purchase_id,
+            razorpayResponse.razorpay_payment_id
+          );
+        },
+        modal: {
+          ondismiss: () => setPaymentStatus("idle"),
+          escape: true,
+          animation: true,
+        },
+      };
+
       const rzp = new window.Razorpay(options);
       rzp.on("payment.failed", (response) => {
         setErrorDetails(response.error.description);
         setPaymentStatus("failure");
       });
       rzp.open();
-    } catch {
-      setErrorDetails("Could not open Razorpay");
+    } catch (err) {
+      console.error("Payment initiation error:", err);
+      setErrorDetails(err?.message || "Could not initiate payment");
       setPaymentStatus("failure");
     }
-  }, [orderData, formData]);
+  }, [trial_user_id, tch_id, files, formData, couponCode]);
 
-  const verifyStatus = (purchaseId) => {
+  const verifyStatus = (purchaseId, razorpayPaymentId) => {
+    let attempts = 0;
+    const MAX_ATTEMPTS = 20; // poll every 3s for max 60 seconds
+
     const interval = setInterval(async () => {
+      attempts++;
+
       try {
         const res = await getPurchaseStatus(purchaseId);
-        if (res.data.status === "received") {
+
+        // Handle both { data: { status } } and direct { status } structures
+        const data = res?.data || res;
+        const status = data?.status;
+
+        if (status === "received") {
           clearInterval(interval);
-          setPaymentDetails(res.data);
+          setPaymentDetails(data);
           setPaymentStatus("success");
-        } else if (res.data.status === "failed") {
+          return;
+        }
+
+        if (status === "failed") {
           clearInterval(interval);
           setErrorDetails("Payment failed on verification.");
+          setPaymentStatus("failure");
+          return;
+        }
+
+        // After 60s of polling, status is still "pending" which means
+        // the webhook has NOT updated the DB yet (webhook misconfigured or delayed).
+        // Do NOT mark as success — show a clear error with the Purchase ID.
+        if (attempts >= MAX_ATTEMPTS) {
+          clearInterval(interval);
+          setErrorDetails(
+            `Your payment was received by Razorpay but our server hasn't confirmed it yet. ` +
+            `Please note your Purchase ID: ${purchaseId} and contact support. ` +
+            `Your payment will be verified and access granted shortly.`
+          );
           setPaymentStatus("failure");
         }
       } catch (err) {
         console.error("Status verification error", err);
+        if (attempts >= MAX_ATTEMPTS) {
+          clearInterval(interval);
+          setErrorDetails(
+            `Could not verify payment status. Purchase ID: ${purchaseId}. ` +
+            `Please contact support — your payment is safe.`
+          );
+          setPaymentStatus("failure");
+        }
       }
     }, 3000);
   };
@@ -217,7 +278,7 @@ const PaymentGateway = () => {
             )}
 
             {/* ==================== IDLE STATE (CHECKOUT) ==================== */}
-            {paymentStatus === "idle" && orderData && (
+            {paymentStatus === "idle" && (
               <motion.div
                 key="checkout"
                 initial={{ opacity: 0, y: 24, scale: 0.98 }}
@@ -251,7 +312,7 @@ const PaymentGateway = () => {
                     </span>
                   </div>
                   <h1 className="text-3xl md:text-4xl font-bold font-heading text-white mb-2 tracking-tight">
-                    Complete Payment
+                    Complete Purchase
                   </h1>
                 </motion.div>
 
@@ -262,13 +323,13 @@ const PaymentGateway = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
                 >
-                  {/* Amount */}
+                  {/* Amount (only if orderData exists) */}
                   <div className="text-center mb-6">
                     <p className="text-[10px] text-white/30 uppercase tracking-[0.2em] font-medium mb-1">
-                      Amount to Pay
+                      {orderData ? "Amount to Pay" : "Review Selections"}
                     </p>
                     <p className="text-4xl md:text-5xl font-bold font-heading bg-gradient-to-r from-white via-white/90 to-white/60 bg-clip-text text-transparent leading-tight">
-                      {formatCurrency(orderData.total_paid_amt)}
+                      {orderData ? formatCurrency(orderData.total_paid_amt) : `${files.length} Item${files.length !== 1 ? 's' : ''}`}
                     </p>
                   </div>
 
@@ -302,56 +363,81 @@ const PaymentGateway = () => {
                     </div>
                   </div>
 
-                  <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mb-6" />
+                  {orderData && (
+                    <>
+                      <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mb-6" />
+                      {/* Order Summary */}
+                      <div className="mb-6">
+                        <h3 className="text-[10px] uppercase tracking-[0.2em] text-white/25 font-semibold mb-3">
+                          Order Summary
+                        </h3>
+                        <div className="space-y-0.5">
+                          <div className="flex items-center justify-between py-2.5">
+                            <span className="flex items-center gap-2.5 text-sm text-white/40 font-medium">
+                              <Tag size={14} className="text-white/20" />
+                              Files Selected
+                            </span>
+                            <span className="text-sm font-semibold text-white/80">
+                              {files.length} Files
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between py-2.5">
+                            <span className="flex items-center gap-2.5 text-sm text-white/40 font-medium">
+                              <Receipt size={14} className="text-white/20" />
+                              Subtotal
+                            </span>
+                            <span className="text-sm font-semibold text-white/80">
+                              {formatCurrency(orderData.total_amt)}
+                            </span>
+                          </div>
+                          {orderData.discount_applied > 0 && (
+                            <div className="flex items-center justify-between py-2.5">
+                              <span className="text-sm text-amber-500/80 font-medium pl-[26px]">
+                                Discount
+                              </span>
+                              <span className="text-sm font-semibold text-amber-400">
+                                -{formatCurrency(orderData.discount_applied)}
+                              </span>
+                            </div>
+                          )}
 
-                  {/* Order Summary */}
-                  <div className="mb-6">
-                    <h3 className="text-[10px] uppercase tracking-[0.2em] text-white/25 font-semibold mb-3">
-                      Order Summary
-                    </h3>
-                    <div className="space-y-0.5">
-                      <div className="flex items-center justify-between py-2.5">
-                        <span className="flex items-center gap-2.5 text-sm text-white/40 font-medium">
-                          <Tag size={14} className="text-white/20" />
-                          Files Selected
-                        </span>
-                        <span className="text-sm font-semibold text-white/80">
-                          {files.length} Files
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between py-2.5">
-                        <span className="flex items-center gap-2.5 text-sm text-white/40 font-medium">
-                          <Receipt size={14} className="text-white/20" />
-                          Subtotal
-                        </span>
-                        <span className="text-sm font-semibold text-white/80">
-                          {formatCurrency(orderData.total_amt)}
-                        </span>
-                      </div>
-                      {orderData.discount_applied > 0 && (
-                        <div className="flex items-center justify-between py-2.5">
-                          <span className="text-sm text-amber-500/80 font-medium pl-[26px]">
-                            Discount
-                          </span>
-                          <span className="text-sm font-semibold text-amber-400">
-                            -{formatCurrency(orderData.discount_applied)}
-                          </span>
+                          {/* Coupon Input */}
+                          <div className="pt-4 mt-2">
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                placeholder="Coupon Code"
+                                value={couponCode}
+                                onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                                className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white/80 focus:outline-none focus:border-amber-500 transition-colors uppercase"
+                              />
+                              <button
+                                onClick={handleApplyCoupon}
+                                disabled={isApplyingCoupon || !couponCode}
+                                className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-semibold transition-all disabled:opacity-50"
+                              >
+                                {isApplyingCoupon ? "..." : "Apply"}
+                              </button>
+                            </div>
+                          </div>
                         </div>
-                      )}
-                    </div>
-                  </div>
+                      </div>
+                    </>
+                  )}
 
                   <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mb-6" />
 
-                  {/* Total */}
-                  <div className="flex justify-between items-center mb-8">
-                    <span className="text-base font-semibold text-white/60">
-                      Total Payable
-                    </span>
-                    <span className="text-xl font-bold text-white font-heading">
-                      {formatCurrency(orderData.total_paid_amt)}
-                    </span>
-                  </div>
+                  {/* Total Only if orderData exists */}
+                  {orderData && (
+                    <div className="flex justify-between items-center mb-8">
+                      <span className="text-base font-semibold text-white/60">
+                        Total Payable
+                      </span>
+                      <span className="text-xl font-bold text-white font-heading">
+                        {formatCurrency(orderData.total_paid_amt)}
+                      </span>
+                    </div>
+                  )}
 
                   {/* Pay Button */}
                   <motion.button
@@ -363,7 +449,7 @@ const PaymentGateway = () => {
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
                     <Lock size={18} className="relative z-10" />
                     <span className="relative z-10">
-                      Pay {formatCurrency(orderData.total_paid_amt)}
+                      {orderData ? `Pay ${formatCurrency(orderData.total_paid_amt)}` : "Confirm & Pay Now"}
                     </span>
                   </motion.button>
 

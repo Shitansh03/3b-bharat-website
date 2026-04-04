@@ -47,14 +47,6 @@ export default defineConfig({
     hmr: {
       overlay: true,
     },
-    proxy: {
-      "/api": {
-        target: "https://edu.3dbharat.com",
-        changeOrigin: true,
-        secure: true,
-        rewrite: (path) => path.replace(/^\/api/, "/server"),
-      },
-    },
   },
   // Optimize dependencies pre-bundling
   optimizeDeps: {

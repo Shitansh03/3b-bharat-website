@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ChevronDown, LogIn, LogOut, User } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import { useTheme } from "../context/ThemeContext";
@@ -18,6 +18,7 @@ const Navbar = () => {
   const { openModal } = useRegistrationModal();
   const { openModal: openLoginModal } = useLoginModal();
   const { isAuthenticated, user, logout } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -143,7 +144,7 @@ const Navbar = () => {
                         className="block w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors duration-150"
                         onClick={() => {
                           setTrialsOpen(false);
-                          openModal(item.name.toLowerCase());
+                          navigate(`/trial-info?category=${item.name.toLowerCase()}`);
                         }}
                       >
                         {item.name}
@@ -284,7 +285,7 @@ const Navbar = () => {
                         onClick={() => {
                           setMobileTrialsOpen(false);
                           setMobileMenuOpen(false);
-                          openModal(item.name.toLowerCase());
+                          navigate(`/trial-info?category=${item.name.toLowerCase()}`);
                         }}
                       >
                         {item.name}

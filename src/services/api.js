@@ -27,6 +27,13 @@ const request = async (endpoint, options = {}) => {
         message: text || `Request failed with status ${response.status}`,
       };
     }
+    if (import.meta.env.DEV) {
+      console.error(`[API Error] ${options.method || "GET"} ${url}:`, {
+        status: response.status,
+        data: errorData,
+      });
+    }
+
     const error = new Error(
       errorData.message || `Request failed with status ${response.status}`,
     );

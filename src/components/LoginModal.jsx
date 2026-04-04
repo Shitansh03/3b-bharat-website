@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
@@ -95,6 +96,7 @@ const FloatingInput = ({
 const LoginModal = () => {
   const { isOpen, closeModal } = useLoginModal();
   const { login, getSavedAppToken } = useAuth();
+  const navigate = useNavigate();
 
   // Login form state
   const [mobileNo, setMobileNo] = useState("");
@@ -171,6 +173,7 @@ const LoginModal = () => {
       // Auto-close after brief success animation
       setTimeout(() => {
         closeModal();
+        navigate("/dashboard");
       }, 1500);
     } catch (err) {
       const errMsg =

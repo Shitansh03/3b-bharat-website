@@ -242,10 +242,9 @@ const FileCard = ({ file }) => {
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ y: -4 }}
       className={`relative rounded-xl overflow-hidden border transition-all duration-300
-        ${
-          file.purchased
-            ? "border-green-200 dark:border-green-500/20 bg-white dark:bg-white/5"
-            : "border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 hover:border-amber-300 dark:hover:border-amber-500/30 hover:shadow-xl hover:shadow-amber-500/10"
+        ${file.purchased
+          ? "border-green-200 dark:border-green-500/20 bg-white dark:bg-white/5"
+          : "border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 hover:border-amber-300 dark:hover:border-amber-500/30 hover:shadow-xl hover:shadow-amber-500/10"
         }`}
     >
       {/* Purchased Badge */}
@@ -487,9 +486,8 @@ const PurchaseDashboard = () => {
     (purchases?.app_purchases?.count || 0);
   const totalPurchases = totalFilePurchases + totalAppPurchases;
 
-  const filesToShow = linkedFileIds.length > 0 ? linkedFiles : availableFiles;
-  const unpurchasedFiles = filesToShow.filter((f) => !f.purchased);
-  const purchasedFiles = filesToShow.filter((f) => f.purchased);
+  const unpurchasedFiles = availableFiles.filter((f) => !f.purchased);
+  const purchasedFiles = availableFiles.filter((f) => f.purchased);
 
   if (!isAuthenticated) return null;
 
@@ -574,11 +572,10 @@ const PurchaseDashboard = () => {
             <motion.button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 ${
-                activeTab === tab.id
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 ${activeTab === tab.id
                   ? "bg-white dark:bg-white/10 text-amber-600 dark:text-amber-400 shadow-sm border border-gray-200 dark:border-white/15"
                   : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-              }`}
+                }`}
               whileTap={{ scale: 0.97 }}
             >
               <tab.icon className="w-4 h-4" />

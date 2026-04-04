@@ -26,7 +26,7 @@ import LoginModal from "./components/LoginModal";
 import InspectionPage from "./components/InspectionPage";
 import DesignWorkPage from "./components/DesignWorkPage";
 import MonitoringPage from "./components/MonitoringPage";
-
+import TrialInfoPage from "./components/TrialInfoPage";
 
 // Lazy load heavy page components for better initial load performance
 const Measurement = lazy(() => import("./components/measurenment/Measurement"));
@@ -96,6 +96,7 @@ const AppContent = () => {
         <main id="main-content" className={isHome ? "" : "pt-20"}>
           <Routes>
             <Route path="/" element={<HomePage />} />
+            <Route path="/trial-info" element={<TrialInfoPage />} />
             <Route
               path="/measurement"
               element={
@@ -172,3 +173,4 @@ function App() {
 }
 
 export default App;
+
