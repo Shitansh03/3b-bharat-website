@@ -434,8 +434,13 @@ const PurchaseDashboard = () => {
         setAvailableFiles(allFiles);
 
         // Filter linked files if edu_file_ids exist
+        // Match against both f.id AND f.tfd_id since desktop app may send tfd_id
         if (linkedFileIds.length > 0) {
-          const matched = allFiles.filter((f) => linkedFileIds.includes(f.id));
+          const matched = allFiles.filter(
+            (f) => linkedFileIds.includes(f.id) || linkedFileIds.includes(f.tfd_id)
+          );
+          console.log("[EduLogin] linkedFileIds:", linkedFileIds);
+          console.log("[EduLogin] matched files:", matched);
           setLinkedFiles(matched);
         }
       } catch (err) {
@@ -464,7 +469,11 @@ const PurchaseDashboard = () => {
           const allFiles = Array.isArray(filesData) ? filesData : [];
           setAvailableFiles(allFiles);
           if (linkedFileIds.length > 0) {
-            setLinkedFiles(allFiles.filter((f) => linkedFileIds.includes(f.id)));
+            setLinkedFiles(
+              allFiles.filter(
+                (f) => linkedFileIds.includes(f.id) || linkedFileIds.includes(f.tfd_id)
+              )
+            );
           }
         })
         .catch((err) => setError(err?.message || "Failed to refresh."))
@@ -597,7 +606,58 @@ const PurchaseDashboard = () => {
 
       {/* Content */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
-        {/* Error */}
+      {/* ── SHARED FILES BANNER (only when arrived via edu-login URL) ── */}
+      {linkedFiles.length > 0 && (
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 mb-2">
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-900/20 border border-amber-200 dark:border-amber-500/30 rounded-2xl p-6 shadow-md relative overflow-hidden"
+          >
+            {/* Top accent line */}
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 via-orange-500 to-red-500" />
+
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h2 className="text-lg font-black text-amber-900 dark:text-amber-300">
+                  Files Shared With You
+                </h2>
+                <p className="text-sm text-amber-700 dark:text-amber-400 mt-0.5 font-medium">
+                  {linkedFiles.length} file{linkedFiles.length !== 1 ? "s" : ""} shared by the desktop application
+                </p>
+              </div>
+              <button
+                onClick={clearLinkedFiles}
+                className="text-xs font-bold px-3 py-1.5 rounded-lg border border-amber-300 dark:border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors"
+              >
+                Clear Filter
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {linkedFiles.map((file) => (
+                <FileCard key={file.id || file.tfd_id} file={file} />
+              ))}
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* ── DEBUG: No match warning ── */}
+      {linkedFileIds.length > 0 && linkedFiles.length === 0 && !isLoading && (
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+          <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-500/30 rounded-xl p-4 flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-bold text-red-800 dark:text-red-400">Linked files not found</p>
+              <p className="text-xs text-red-600 dark:text-red-500 mt-0.5">
+                File IDs from URL: [{linkedFileIds.join(", ")}] — could not match any files. Please check the IDs sent by the desktop app.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
         {error && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
