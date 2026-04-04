@@ -64,6 +64,7 @@ const CATEGORY_DOWNLOADS = {
 };
 
 const DOWNLOAD_BASE_URL = "https://edu.3dbharat.com/downloads/application";
+// const DOWNLOAD_BASE_URL = "http://localhost:3000/downloads/application"
 
 const STEPS = [
   { id: 1, label: "Personal" },
