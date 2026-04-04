@@ -1,18 +1,8 @@
 import { request } from "./api";
 
-// /**
-//  * Create a new Razorpay order and pending purchase record
-//  * POST /3dtrial/purchases/create-order
-//  */
-// export const createPurchaseOrder = async (orderData) => {
-//   return request("/3dtrial/purchases/create-order", {
-//     method: "POST",
-//     body: JSON.stringify(orderData),
-//   });
-// };
-
 /**
- * Handle purchase creation with coupon support (NEW API)
+ * Create a purchase with Razorpay order (if payment required)
+ * Handles both free and paid purchases
  * POST /3dtrial/purchases/create
  */
 export const createPurchase = async (purchaseData) => {

@@ -61,30 +61,110 @@ const PaymentGateway = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Load order on component mount
+  useEffect(() => {
+    if (!trial_user_id || !tch_id || !files || files.length === 0) {
+      console.log("[PaymentGateway] Missing required params:", {
+        trial_user_id,
+        tch_id,
+        files,
+      });
+      return;
+    }
+
+    const loadOrder = async () => {
+      setPaymentStatus("loading_order");
+      const payload = {
+        trial_user_id,
+        tch_id,
+        files,
+      };
+
+      if (couponCode) {
+        payload.coupon_code = couponCode;
+      }
+
+      console.log("[PaymentGateway] Creating purchase with payload:", payload);
+
+      try {
+        const response = await createPurchase(payload);
+
+        console.log("[PaymentGateway] Purchase creation response:", response);
+
+        // Response structure: { status_code: 201, message: "...", purchase_id: "...", ... }
+        // Data is flattened at root level, not in response.data
+        const orderData = response?.data || response;
+        
+        if (orderData && orderData.purchase_id) {
+          setOrderData(orderData);
+          // If it's a free purchase (no razorpay_order_id), mark as success
+          if (orderData.status === "received") {
+            setPaymentDetails(orderData);
+            setPaymentStatus("success");
+          } else {
+            setPaymentStatus("idle");
+          }
+        } else {
+          setErrorDetails("Failed to create purchase.");
+          setPaymentStatus("failure");
+        }
+      } catch (err) {
+        console.error("[PaymentGateway] Error creating purchase:", err);
+        console.error("[PaymentGateway] Error details:", {
+          message: err?.message,
+          status: err?.status,
+          data: err?.data,
+        });
+
+        const errorMessage = err?.data?.message || err?.message || "Something went wrong.";
+        setErrorDetails(errorMessage);
+        setPaymentStatus("failure");
+      }
+    };
+
+    loadOrder();
+  }, [trial_user_id, tch_id, files, couponCode]);
+
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) return;
     setIsApplyingCoupon(true);
     try {
-      const response = await createPurchase({
+      // Reload purchase with new coupon code
+      const payload = {
         trial_user_id,
         tch_id,
         files,
-        coupon_code: couponCode
-      });
+        coupon_code: couponCode,
+      };
+
+      const response = await createPurchase(payload);
       const order = response?.data || response;
-      if (order && (order.total_amt !== undefined || order.purchase_id)) {
+      if (order && order.purchase_id) {
         setOrderData(order);
+        // If it's free after coupon, mark success immediately
+        if (order.status === "received") {
+          setPaymentDetails(order);
+          setPaymentStatus("success");
+        }
       } else {
-        console.warn("[Payment] Coupon applied but response structure was unexpected:", response);
+        console.warn("[Payment] Coupon applied but response structure unexpected:", response);
       }
     } catch (err) {
       console.error("Coupon error:", err);
+      setErrorDetails(err?.data?.message || err?.message || "Failed to apply coupon");
     } finally {
       setIsApplyingCoupon(false);
     }
   };
 
-  const handlePayment = useCallback(async () => {
+  const handlePayment = useCallback(() => {
+    if (!orderData) return;
+
+    // If no payment required (free purchase), it's already marked as success
+    if (!orderData.razorpay_order_id) {
+      return;
+    }
+
     if (!window.Razorpay) {
       setErrorDetails("Razorpay SDK not loaded");
       setPaymentStatus("failure");
@@ -94,40 +174,13 @@ const PaymentGateway = () => {
     setPaymentStatus("processing");
 
     try {
-      // Call createPurchase to get the final order with current coupon
-      const response = await createPurchase({
-        trial_user_id,
-        tch_id,
-        files,
-        coupon_code: couponCode
-      });
-
-      // Support both { data: order } and direct order object responses
-      const currentOrder = response?.data || response;
-
-      // Basic validation to ensure we got a valid order object
-      if (!currentOrder || (!currentOrder.razorpay_order_id && currentOrder.total_paid_amt > 0)) {
-        console.error("[Payment] Unexpected API response:", response);
-        throw new Error("Failed to create purchase record: Invalid server response");
-      }
-
-      setOrderData(currentOrder);
-
-      // If amount is 0, handle success immediately
-      if (currentOrder.status === "received" || currentOrder.total_paid_amt === 0) {
-        setPaymentDetails(currentOrder);
-        setPaymentStatus("success");
-        return;
-      }
-
       const options = {
-        // Use key from backend if provided, otherwise fallback to local env
-        key: currentOrder.razorpay_key || import.meta.env.VITE_RAZORPAY_KEY_ID,
-        amount: Math.round(currentOrder.total_paid_amt * 100),
-        currency: currentOrder.currency || "INR",
+        key: orderData.razorpay_key || import.meta.env.VITE_RAZORPAY_KEY_ID,
+        amount: Math.round(orderData.total_paid_amt * 100),
+        currency: orderData.currency || "INR",
         name: "3D Bharat",
         description: "3D Files Purchase",
-        order_id: currentOrder.razorpay_order_id,
+        order_id: orderData.razorpay_order_id,
         image: "/favicon.ico",
         prefill: {
           name: formData.name,
@@ -136,12 +189,8 @@ const PaymentGateway = () => {
         },
         theme: { color: "#1a1a2e", backdrop_color: "rgba(0,0,0,0.6)" },
         handler: async (razorpayResponse) => {
-          // razorpayResponse contains razorpay_payment_id, razorpay_order_id, razorpay_signature
           setPaymentStatus("processing");
-          verifyStatus(
-            currentOrder.purchase_id,
-            razorpayResponse.razorpay_payment_id
-          );
+          verifyStatus(orderData.purchase_id);
         },
         modal: {
           ondismiss: () => setPaymentStatus("idle"),
@@ -161,7 +210,7 @@ const PaymentGateway = () => {
       setErrorDetails(err?.message || "Could not initiate payment");
       setPaymentStatus("failure");
     }
-  }, [trial_user_id, tch_id, files, formData, couponCode]);
+  }, [orderData, formData]);
 
   const verifyStatus = (purchaseId, razorpayPaymentId) => {
     let attempts = 0;
