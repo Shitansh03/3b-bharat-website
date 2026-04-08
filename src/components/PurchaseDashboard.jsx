@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Loader2,
   AlertCircle,
+  AlertTriangle,
   Check,
   Star,
   Layers,
@@ -21,6 +22,8 @@ import {
   RefreshCw,
   User,
   ArrowLeft,
+  Smartphone,
+  X,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -232,9 +235,95 @@ const CategoryPurchaseSection = ({ category, files, apps }) => {
   );
 };
 
+/* ─── Wrong-App Warning Modal ─── */
+const WrongAppModal = ({ appName, onClose }) => (
+  <AnimatePresence>
+    {appName && (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+      >
+        <motion.div
+          initial={{ scale: 0.9, y: 20 }}
+          animate={{ scale: 1, y: 0 }}
+          exit={{ scale: 0.9, y: 20 }}
+          transition={{ type: "spring", stiffness: 300, damping: 25 }}
+          className="relative w-full max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-orange-200 dark:border-orange-500/30 overflow-hidden"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Top accent */}
+          <div className="h-1.5 bg-gradient-to-r from-orange-400 via-amber-500 to-yellow-400" />
+          <div className="p-6">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl bg-orange-100 dark:bg-orange-500/10 flex items-center justify-center flex-shrink-0">
+                <Smartphone className="w-6 h-6 text-orange-500" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
+                  Different Application Required
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                  You are currently logged in via a different application. To access{" "}
+                  <span className="font-semibold text-orange-600 dark:text-orange-400">
+                    {appName}
+                  </span>{" "}files, please download the{" "}
+                  <span className="font-semibold text-orange-600 dark:text-orange-400">
+                    {appName} desktop application
+                  </span>{" "}and log in from there.
+                </p>
+              </div>
+              <button
+                onClick={onClose}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors flex-shrink-0"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="mt-5 p-4 rounded-xl bg-orange-50 dark:bg-orange-500/5 border border-orange-200 dark:border-orange-500/20">
+              <div className="flex items-center gap-2 mb-2">
+                <AlertTriangle className="w-4 h-4 text-orange-500 flex-shrink-0" />
+                <p className="text-xs font-semibold text-orange-700 dark:text-orange-400">
+                  How to access these files:
+                </p>
+              </div>
+              <ol className="text-xs text-orange-700 dark:text-orange-300 space-y-1 pl-6 list-decimal">
+                <li>Download the correct desktop application</li>
+                <li>Login with your credentials in that application</li>
+                <li>Access & purchase the files from within the application</li>
+              </ol>
+            </div>
+
+            <button
+              onClick={onClose}
+              className="mt-5 w-full py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white font-semibold text-sm hover:from-orange-600 hover:to-amber-600 transition-all shadow-md shadow-orange-500/20"
+            >
+              Got it
+            </button>
+          </div>
+        </motion.div>
+      </motion.div>
+    )}
+  </AnimatePresence>
+);
+
 /* ─── Available File Card ─── */
-const FileCard = ({ file }) => {
+const FileCard = ({ file, onWrongApp, showAction = true }) => {
   const navigate = useNavigate();
+
+  const handleBuyNow = () => {
+    // If file belongs to a different category than the user's app, warn them
+    // (this is a client-side hint; the API also validates server-side)
+    if (onWrongApp && file.category_name) {
+      // onWrongApp will be called with the app name if mismatch detected by parent
+      onWrongApp(file);
+      return;
+    }
+    navigate("/payment", { state: { tch_id: file.tch_id, files: [file.id] } });
+  };
 
   return (
     <motion.div
@@ -321,9 +410,9 @@ const FileCard = ({ file }) => {
               <Download className="w-3.5 h-3.5" />
               Available
             </span>
-          ) : (
+          ) : showAction && (
             <motion.button
-              onClick={() => navigate("/payment", { state: { tch_id: file.tch_id, files: [file.id] } })}
+              onClick={handleBuyNow}
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-white
                 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600
                 shadow-md shadow-amber-500/20 hover:shadow-amber-500/40
@@ -390,6 +479,9 @@ const PurchaseDashboard = () => {
   // Edu login linked files (from sessionStorage)
   const [linkedFileIds, setLinkedFileIds] = useState([]);
   const [linkedFiles, setLinkedFiles] = useState([]);
+
+  // Wrong-app warning modal state
+  const [wrongAppModal, setWrongAppModal] = useState(null); // null | string (app name to download)
 
   // Read edu_file_ids from sessionStorage on mount
   useEffect(() => {
@@ -488,6 +580,60 @@ const PurchaseDashboard = () => {
     setLinkedFiles([]);
   };
 
+  // Detect user's login_type app name from user object
+  const LOGIN_TYPE_MAP = { 1: "road", 2: "bridge", 3: "railway", 4: "metro" };
+  const userAppName = LOGIN_TYPE_MAP[user?.user_login_type] || null;
+
+  // Handler for FileCard wrong-app detection
+  const handleFileCardClick = (file) => {
+    if (userAppName && file.category_name) {
+      const fileCat = file.category_name.toLowerCase();
+      if (fileCat !== userAppName) {
+        // Show the wrong-app warning modal
+        setWrongAppModal(file.category_name);
+        return;
+      }
+    }
+    // Proceed to payment normally
+    navigate("/payment", { state: { tch_id: file.tch_id, files: [file.id] } });
+  };
+
+  // Compute linked files split: purchased vs unpurchased
+  const linkedPurchased = linkedFiles.filter((f) => f.purchased);
+  const linkedUnpurchased = linkedFiles.filter((f) => !f.purchased);
+
+  // Calculate total price for unpurchased linked files
+  const linkedTotalPrice = linkedUnpurchased.reduce(
+    (sum, f) => sum + (parseFloat(f.price) || 0),
+    0
+  );
+
+  // tch_id for the Buy All button — use the first file's tch_id (all files should share same category)
+  const linkedTchId = linkedUnpurchased[0]?.tch_id || null;
+
+  // Handler for "Buy Now" (all linked unpurchased files)
+  const handleBuyAllLinked = () => {
+    if (linkedUnpurchased.length === 0 || !linkedTchId) return;
+
+    // Check if any linked file is from a different app
+    if (userAppName) {
+      const wrongFile = linkedUnpurchased.find(
+        (f) => f.category_name?.toLowerCase() !== userAppName
+      );
+      if (wrongFile) {
+        setWrongAppModal(wrongFile.category_name);
+        return;
+      }
+    }
+
+    navigate("/payment", {
+      state: {
+        tch_id: linkedTchId,
+        files: linkedUnpurchased.map((f) => f.id),
+      },
+    });
+  };
+
   // Count total purchases
   const totalFilePurchases =
     (purchases?.file_purchases?.count || 0);
@@ -501,6 +647,12 @@ const PurchaseDashboard = () => {
   if (!isAuthenticated) return null;
 
   return (
+    <>
+    {/* Wrong-App Warning Modal */}
+    <WrongAppModal
+      appName={wrongAppModal}
+      onClose={() => setWrongAppModal(null)}
+    />
     <div className="min-h-screen pb-12">
       {/* Hero Header */}
       <div className="relative overflow-hidden">
@@ -617,28 +769,104 @@ const PurchaseDashboard = () => {
             {/* Top accent line */}
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 via-orange-500 to-red-500" />
 
-            <div className="flex items-center justify-between mb-5">
+            {/* Header row */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5">
               <div>
                 <h2 className="text-lg font-black text-amber-900 dark:text-amber-300">
                   Files Shared With You
                 </h2>
                 <p className="text-sm text-amber-700 dark:text-amber-400 mt-0.5 font-medium">
                   {linkedFiles.length} file{linkedFiles.length !== 1 ? "s" : ""} shared by the desktop application
+                  {linkedPurchased.length > 0 && (
+                    <span className="ml-2 text-green-600 dark:text-green-400">
+                      · {linkedPurchased.length} already owned
+                    </span>
+                  )}
                 </p>
               </div>
               <button
                 onClick={clearLinkedFiles}
-                className="text-xs font-bold px-3 py-1.5 rounded-lg border border-amber-300 dark:border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors"
+                className="self-start sm:self-auto text-xs font-bold px-3 py-1.5 rounded-lg border border-amber-300 dark:border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors"
               >
                 Clear Filter
               </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* File Cards Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-5">
               {linkedFiles.map((file) => (
-                <FileCard key={file.id || file.tfd_id} file={file} />
+                <FileCard
+                  key={file.id || file.tfd_id}
+                  file={file}
+                  showAction={false}
+                  onWrongApp={userAppName ? (f) => {
+                    if (f.category_name?.toLowerCase() !== userAppName) {
+                      setWrongAppModal(f.category_name);
+                    } else {
+                      navigate("/payment", { state: { tch_id: f.tch_id, files: [f.id] } });
+                    }
+                  } : null}
+                />
               ))}
             </div>
+
+            {/* ── Price Summary + Buy Now CTA ── */}
+            {linkedUnpurchased.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 }}
+                className="border-t border-amber-200 dark:border-amber-500/20 pt-4"
+              >
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  {/* Price breakdown */}
+                  <div>
+                    <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-1">
+                      Order Summary
+                    </p>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-2xl font-black text-amber-900 dark:text-white">
+                        {formatPrice(linkedTotalPrice)}
+                      </span>
+                      <span className="text-sm text-amber-600 dark:text-amber-400">
+                        for {linkedUnpurchased.length} file{linkedUnpurchased.length !== 1 ? "s" : ""}
+                      </span>
+                    </div>
+                    {linkedPurchased.length > 0 && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        {linkedPurchased.length} file{linkedPurchased.length !== 1 ? "s" : ""} already owned — excluded from total
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Buy All CTA */}
+                  <motion.button
+                    onClick={handleBuyAllLinked}
+                    whileHover={{ scale: 1.04 }}
+                    whileTap={{ scale: 0.97 }}
+                    className="flex items-center gap-2.5 px-6 py-3 rounded-xl font-bold text-sm text-white
+                      bg-gradient-to-r from-amber-500 via-orange-500 to-red-500
+                      hover:from-amber-600 hover:via-orange-600 hover:to-red-600
+                      shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50
+                      transition-all duration-300 whitespace-nowrap"
+                  >
+                    <ShoppingBag className="w-4 h-4" />
+                    Buy Now · {formatPrice(linkedTotalPrice)}
+                    <ChevronRight className="w-4 h-4" />
+                  </motion.button>
+                </div>
+              </motion.div>
+            )}
+
+            {/* All already purchased */}
+            {linkedUnpurchased.length === 0 && linkedPurchased.length > 0 && (
+              <div className="border-t border-amber-200 dark:border-amber-500/20 pt-4 flex items-center gap-2">
+                <Check className="w-4 h-4 text-green-600" />
+                <p className="text-sm font-semibold text-green-700 dark:text-green-400">
+                  You already own all the shared files!
+                </p>
+              </div>
+            )}
           </motion.div>
         </div>
       )}
@@ -765,7 +993,11 @@ const PurchaseDashboard = () => {
                       </h2>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {unpurchasedFiles.map((file) => (
-                          <FileCard key={file.id} file={file} />
+                          <FileCard
+                            key={file.id}
+                            file={file}
+                            onWrongApp={userAppName ? handleFileCardClick : null}
+                          />
                         ))}
                       </div>
                     </div>
@@ -779,7 +1011,11 @@ const PurchaseDashboard = () => {
                       </h2>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {purchasedFiles.map((file) => (
-                          <FileCard key={file.id} file={file} />
+                          <FileCard
+                            key={file.id}
+                            file={file}
+                            onWrongApp={userAppName ? handleFileCardClick : null}
+                          />
                         ))}
                       </div>
                     </div>
@@ -791,6 +1027,7 @@ const PurchaseDashboard = () => {
         )}
       </div>
     </div>
+    </>
   );
 };
 

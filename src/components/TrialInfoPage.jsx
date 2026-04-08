@@ -273,19 +273,19 @@ const TrialInfoPage = () => {
               whileInView="show"
               viewport={{ once: true, margin: "-50px" }}
               variants={fadeUpVariant}
-              className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-6 border border-gray-700 shadow-xl relative overflow-hidden shrink-0 group"
+              className="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-200 dark:border-gray-800 shadow-lg relative overflow-hidden shrink-0 group"
             >
               <motion.div variants={horizontalLineVariant} initial="hidden" animate="show" className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 origin-left" />
-              <h2 className="text-xl md:text-2xl font-extrabold text-white mb-4">Why You Should Join?</h2>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Why You Should Join?</h2>
               <motion.div variants={staggerList} initial="hidden" animate="show" className="flex flex-col gap-2.5">
                 {[
                   "Learn industry-ready skills",
                   "Work with real-world 3D design data",
                   "Gain hands-on practical experience",
                 ].map((pill, i) => (
-                  <motion.div key={i} variants={listItemVariant} className="flex items-center text-gray-300 hover:text-white transition-colors cursor-default">
-                    <span className="w-1 h-1 rounded-sm bg-gradient-to-br from-amber-400 to-orange-500 mr-2.5 shrink-0 shadow-[0_0_8px_rgba(245,158,11,0.5)] transform rotate-45" />
-                    <span className="font-medium text-xs md:text-sm leading-snug">{pill}</span>
+                  <motion.div key={i} variants={listItemVariant} className="flex items-center text-gray-700 dark:text-gray-300 hover:text-amber-600 dark:hover:text-amber-400 transition-colors cursor-default">
+                    <span className="w-1.5 h-1.5 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 mr-2.5 shrink-0 shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
+                    <span className="font-bold text-sm leading-snug">{pill}</span>
                   </motion.div>
                 ))}
               </motion.div>
