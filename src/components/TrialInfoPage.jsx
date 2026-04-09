@@ -58,7 +58,7 @@ const getModulesData = (cat) => {
   if (c === "railway" || c === "railways") {
     return [
       {
-        title: "Railways",
+        title: "Railway and Metro",
         items: [
           { prefix: "•", text: "Cant Angle" },
           { prefix: "•", text: "OHE wire angle & height analysis" },
@@ -187,27 +187,26 @@ const TrialInfoPage = () => {
       try {
         const response = await fetch(`${BASE_URL}/3dtrial/download-counts`);
         const json = await response.json();
-        const stats = json.data || json;
-        if (stats) {
+        if (json) {
           setDownloadStats({
-            files: stats.total_file_download_count || 0,
-            apps: stats.total_app_download_count || 0
+            files: json.total_file_download_count || 0,
+            apps: json.total_app_download_count || 0
           });
         }
       } catch (error) {
         console.error("Error fetching download counts:", error);
       }
     };
-    
+
     fetchDownloadCounts();
 
     // Listen for custom event from RegistrationModal
     const handleRefresh = () => {
       fetchDownloadCounts();
     };
-    
+
     window.addEventListener("refreshDownloadCounts", handleRefresh);
-    
+
     return () => {
       window.removeEventListener("refreshDownloadCounts", handleRefresh);
     };
@@ -263,39 +262,7 @@ const TrialInfoPage = () => {
 
       <div className="max-w-[1400px] mx-auto z-10 relative px-4 sm:px-6 lg:px-12">
 
-        {/* Download Stats Corner Widget */}
-        {(downloadStats.files > 0 || downloadStats.apps > 0) && (
-          <motion.div 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="absolute top-4 right-4 md:top-2 md:right-8 lg:right-12 z-50 flex items-center gap-3 md:gap-4 bg-white/80 dark:bg-black/60 backdrop-blur-md border border-amber-500/20 shadow-[0_8px_30px_rgb(245,158,11,0.15)] rounded-2xl px-4 py-2.5 group hover:bg-white/95 dark:hover:bg-black/80 transition-all duration-300"
-          >
-            <div className="flex items-center gap-2">
-              <div className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider leading-none mb-0.5">App Downloads</span>
-                <span className="text-sm font-black text-gray-800 dark:text-white leading-none">
-                  {downloadStats.apps.toLocaleString()}<span className="text-amber-500">+</span>
-                </span>
-              </div>
-            </div>
-            
-            <div className="w-px h-6 bg-gray-300 dark:bg-gray-700 mx-1" />
-            
-            <div className="flex items-center gap-2">
-              <div className="flex flex-col">
-                <span className="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider leading-none mb-0.5">Files Downloaded</span>
-                <span className="text-sm font-black text-gray-800 dark:text-white leading-none">
-                  {downloadStats.files.toLocaleString()}<span className="text-amber-500">+</span>
-                </span>
-              </div>
-            </div>
-          </motion.div>
-        )}
+        {/* Download Stats Moved Down to Carousel Image section */}
 
         {/* ======================================================= */}
         {/* HERO SECTION: Left (Heading + Boxes) | Right (Carousel) */}
@@ -360,7 +327,41 @@ const TrialInfoPage = () => {
           </div>
 
           {/* RIGHT: Image Carousel */}
-          <div className="lg:col-span-5 relative">
+          <div className="lg:col-span-5 relative mt-12 md:mt-0">
+            {/* Download Stats Corner Widget - Positioned matching diagram */}
+            {(downloadStats.files > 0 || downloadStats.apps > 0) && (
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.2 }}
+                className="absolute -top-10 right-4 md:right-10 z-[60] flex items-center gap-3 md:gap-4 bg-white/80 dark:bg-black/60 backdrop-blur-md border border-amber-500/20 shadow-[0_8px_30px_rgb(245,158,11,0.15)] rounded-2xl px-4 py-2.5 group hover:bg-white/95 dark:hover:bg-black/80 transition-all duration-300"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="relative flex h-3 w-3 -mt-4">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-widest leading-none mb-1.5">App Downloads</span>
+                    <span className="text-3xl font-black text-gray-800 dark:text-white leading-none tracking-tight">
+                      {downloadStats.apps.toLocaleString()}<span className="text-amber-500 ml-0.5 text-2xl">+</span>
+                    </span>
+                  </div>
+                </div>
+
+                <div className="w-px h-12 bg-gray-300 dark:bg-gray-700 mx-3" />
+
+                <div className="flex items-center gap-2">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-widest leading-none mb-1.5">Files Downloaded</span>
+                    <span className="text-3xl font-black text-gray-800 dark:text-white leading-none tracking-tight">
+                      {downloadStats.files.toLocaleString()}<span className="text-amber-500 ml-0.5 text-2xl">+</span>
+                    </span>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
             <div className="relative rounded-[3rem] overflow-hidden shadow-[0_40px_100px_-20px_rgba(0,0,0,0.3)] border-2 border-amber-500/10 group h-[440px] lg:h-[520px]">
               <AnimatePresence>
                 <motion.div
@@ -684,8 +685,8 @@ const TrialInfoPage = () => {
                   </span>
                 </div>
 
-                {/* Registration Modal — grows naturally, no height cut-off */}
-                <div className="py-2 px-1 relative w-full flex-grow bg-white dark:bg-gray-900">
+                {/* Registration Modal — scrollable form area */}
+                <div className="py-2 px-1 relative w-full max-h-[80vh] overflow-y-auto custom-scrollbar bg-white dark:bg-gray-900 rounded-b-[2rem]">
                   <RegistrationModal isOpen={true} inline={true} forcedCategory={category.toLowerCase()} onClose={() => { }} />
                 </div>
               </div>

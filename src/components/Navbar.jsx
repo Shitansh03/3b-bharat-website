@@ -42,7 +42,7 @@ const Navbar = () => {
   const trialsDropdownItems = [
     { name: "Road", href: "/measurement?category=road" },
     { name: "Bridge", href: "/measurement?category=bridge" },
-    { name: "Railways", href: "/measurement?category=railway" },
+    { name: "Railways and Metro", href: "/measurement?category=railway" },
     { name: "Measurement", href: "/measurement" },
   ];
 
@@ -59,11 +59,10 @@ const Navbar = () => {
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-        scrolled
-          ? "bg-stone-100/80 dark:bg-black/80 backdrop-blur-xl border-b border-gray-300 dark:border-white/10"
-          : "bg-transparent"
-      }`}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled
+        ? "bg-stone-100/80 dark:bg-black/80 backdrop-blur-xl border-b border-gray-300 dark:border-white/10"
+        : "bg-transparent"
+        }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
@@ -214,19 +213,16 @@ const Navbar = () => {
             >
               <div className="w-6 h-5 flex flex-col justify-between">
                 <span
-                  className={`w-full h-0.5 transition-all duration-300 ${scrolled ? "bg-gray-800 dark:bg-white" : "bg-white"} ${
-                    mobileMenuOpen ? "rotate-45 translate-y-2" : ""
-                  }`}
+                  className={`w-full h-0.5 transition-all duration-300 ${scrolled ? "bg-gray-800 dark:bg-white" : "bg-white"} ${mobileMenuOpen ? "rotate-45 translate-y-2" : ""
+                    }`}
                 />
                 <span
-                  className={`w-full h-0.5 transition-all duration-300 ${scrolled ? "bg-gray-800 dark:bg-white" : "bg-white"} ${
-                    mobileMenuOpen ? "opacity-0" : ""
-                  }`}
+                  className={`w-full h-0.5 transition-all duration-300 ${scrolled ? "bg-gray-800 dark:bg-white" : "bg-white"} ${mobileMenuOpen ? "opacity-0" : ""
+                    }`}
                 />
                 <span
-                  className={`w-full h-0.5 transition-all duration-300 ${scrolled ? "bg-gray-800 dark:bg-white" : "bg-white"} ${
-                    mobileMenuOpen ? "-rotate-45 -translate-y-2" : ""
-                  }`}
+                  className={`w-full h-0.5 transition-all duration-300 ${scrolled ? "bg-gray-800 dark:bg-white" : "bg-white"} ${mobileMenuOpen ? "-rotate-45 -translate-y-2" : ""
+                    }`}
                 />
               </div>
             </button>

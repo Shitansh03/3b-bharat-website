@@ -59,14 +59,14 @@ const COUNTRY_CODES = [
 const CATEGORY_DOWNLOADS = {
   road: {
     label: "Road Design",
-    filename: "3D_Bharat_Road_Design_Application_v1.0.0.exe",
+    filename: "/3D%20Bharat%20Road%20Application_v1.0.1.exe",
   },
   bridge: {
     label: "Bridge Design",
     filename: "",
   },
   railway: {
-    label: "Railway Design",
+    label: "Railway and Metro",
     filename: "",
   },
   metro: {
@@ -448,7 +448,7 @@ const RegistrationModal = ({ isOpen, onClose, inline = false, forcedCategory = n
       setGeneratedPassword(password);
       setOtpSent(true);
       setOtpTimer(30);
-      
+
       // Trigger download counts refresh on successful registration
       window.dispatchEvent(new Event("refreshDownloadCounts"));
     } catch (error) {

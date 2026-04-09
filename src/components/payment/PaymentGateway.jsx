@@ -94,7 +94,7 @@ const PaymentGateway = () => {
         // Response structure: { status_code: 201, message: "...", purchase_id: "...", ... }
         // Data is flattened at root level, not in response.data
         const orderData = response?.data || response;
-        
+
         if (orderData && orderData.purchase_id) {
           setOrderData(orderData);
           // If it's a free purchase (no razorpay_order_id), mark as success
