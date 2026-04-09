@@ -26,6 +26,9 @@ import { request } from "../api";
  * }
  */
 export const registerUser = async (formData) => {
+  const categoryMap = { road: 1, bridge: 2, railway: 3, metro: 4 };
+  const user_login_type = categoryMap[formData.category?.toLowerCase()] || 1;
+
   const payload = {
     first_name: formData.firstName,
     last_name: formData.lastName,
@@ -34,6 +37,7 @@ export const registerUser = async (formData) => {
     user_mob_no: formData.mobile,
     country_code: formData.countryCode || "+91",
     user_type: formData.role === "student" ? 1 : 2,
+    user_login_type,
     terms_and_conditions: 1,
   };
 

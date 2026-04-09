@@ -145,11 +145,24 @@ const CategoryPurchaseSection = ({ category, files, apps }) => {
               </div>
 
               <div className="flex items-center gap-2 flex-shrink-0">
-                {/* Status Badge */}
                 <span className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400 border border-green-200 dark:border-green-500/20">
                   <Check className="w-3 h-3" />
                   Purchased
                 </span>
+                {/* Download Button */}
+                {file.folder_location && (
+                  <a
+                    href={file.folder_location}
+                    download
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-1.5 sm:px-3 sm:py-1.5 rounded-lg text-xs font-semibold text-white bg-green-500 hover:bg-green-600 shadow-md shadow-green-500/20 transition-all flex items-center gap-1.5"
+                    title="Download File"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span className="hidden sm:inline">Download</span>
+                  </a>
+                )}
                 {/* Invoice */}
                 {file.invoice_pdf_url && (
                   <a
@@ -406,10 +419,23 @@ const FileCard = ({ file, onWrongApp, showAction = true }) => {
 
           {/* Action */}
           {file.purchased ? (
-            <span className="flex items-center gap-1 text-xs font-medium text-green-600 dark:text-green-400">
-              <Download className="w-3.5 h-3.5" />
-              Available
-            </span>
+            file.folder_location ? (
+              <a
+                href={file.folder_location}
+                download
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-green-500 hover:bg-green-600 shadow-md shadow-green-500/20 transition-all"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Download
+              </a>
+            ) : (
+              <span className="flex items-center gap-1 text-xs font-medium text-green-600 dark:text-green-400">
+                <Check className="w-3.5 h-3.5" />
+                Purchased
+              </span>
+            )
           ) : showAction && (
             <motion.button
               onClick={handleBuyNow}
@@ -648,385 +674,385 @@ const PurchaseDashboard = () => {
 
   return (
     <>
-    {/* Wrong-App Warning Modal */}
-    <WrongAppModal
-      appName={wrongAppModal}
-      onClose={() => setWrongAppModal(null)}
-    />
-    <div className="min-h-screen pb-12">
-      {/* Hero Header */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-red-500/10 dark:from-amber-500/5 dark:via-orange-500/3 dark:to-red-500/5" />
-        <div className="absolute inset-0">
-          <div className="absolute top-0 right-0 w-96 h-96 rounded-full bg-amber-400/10 dark:bg-amber-400/5 blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-72 h-72 rounded-full bg-orange-400/10 dark:bg-orange-400/5 blur-3xl" />
-        </div>
+      {/* Wrong-App Warning Modal */}
+      <WrongAppModal
+        appName={wrongAppModal}
+        onClose={() => setWrongAppModal(null)}
+      />
+      <div className="min-h-screen pb-12">
+        {/* Hero Header */}
+        <div className="relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-red-500/10 dark:from-amber-500/5 dark:via-orange-500/3 dark:to-red-500/5" />
+          <div className="absolute inset-0">
+            <div className="absolute top-0 right-0 w-96 h-96 rounded-full bg-amber-400/10 dark:bg-amber-400/5 blur-3xl" />
+            <div className="absolute bottom-0 left-0 w-72 h-72 rounded-full bg-orange-400/10 dark:bg-orange-400/5 blur-3xl" />
+          </div>
 
-        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
-          {/* Back link */}
-          <Link
-            to="/"
-            className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 transition-colors mb-4"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Home
-          </Link>
+          <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+            {/* Back link */}
+            <Link
+              to="/"
+              className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 transition-colors mb-4"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to Home
+            </Link>
 
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <motion.h1
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-white"
-              >
-                Welcome,{" "}
-                <span className="bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
-                  {user?.first_name || "User"}
-                </span>
-              </motion.h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                View your purchase history and explore available files
-              </p>
-            </div>
-
-            {/* Stats Cards */}
-            <div className="flex gap-3">
-              <div className="px-4 py-3 rounded-xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 shadow-sm">
-                <p className="text-[10px] uppercase tracking-wider font-semibold text-gray-400 dark:text-gray-500">
-                  Purchases
-                </p>
-                <p className="text-xl font-bold text-gray-800 dark:text-white mt-0.5">
-                  {isLoading ? "—" : totalPurchases}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <motion.h1
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-white"
+                >
+                  Welcome,{" "}
+                  <span className="bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
+                    {user?.first_name || "User"}
+                  </span>
+                </motion.h1>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  View your purchase history and explore available files
                 </p>
               </div>
-              {user?.remaining_days !== undefined && user?.remaining_days !== null && (
+
+              {/* Stats Cards */}
+              <div className="flex gap-3">
                 <div className="px-4 py-3 rounded-xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 shadow-sm">
                   <p className="text-[10px] uppercase tracking-wider font-semibold text-gray-400 dark:text-gray-500">
-                    Days Left
+                    Purchases
                   </p>
-                  <p className={`text-xl font-bold mt-0.5 ${user.remaining_days > 30 ? "text-green-600 dark:text-green-400" : user.remaining_days > 7 ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400"}`}>
-                    {user.remaining_days}
+                  <p className="text-xl font-bold text-gray-800 dark:text-white mt-0.5">
+                    {isLoading ? "—" : totalPurchases}
                   </p>
                 </div>
-              )}
-              <motion.button
-                onClick={handleRefresh}
-                disabled={isLoading}
-                className="self-center p-2.5 rounded-xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 shadow-sm
+                {user?.remaining_days !== undefined && user?.remaining_days !== null && (
+                  <div className="px-4 py-3 rounded-xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 shadow-sm">
+                    <p className="text-[10px] uppercase tracking-wider font-semibold text-gray-400 dark:text-gray-500">
+                      Days Left
+                    </p>
+                    <p className={`text-xl font-bold mt-0.5 ${user.remaining_days > 30 ? "text-green-600 dark:text-green-400" : user.remaining_days > 7 ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400"}`}>
+                      {user.remaining_days}
+                    </p>
+                  </div>
+                )}
+                <motion.button
+                  onClick={handleRefresh}
+                  disabled={isLoading}
+                  className="self-center p-2.5 rounded-xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 shadow-sm
                   text-gray-500 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 hover:border-amber-300 dark:hover:border-amber-500/30
                   transition-all duration-300 disabled:opacity-50"
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                title="Refresh data"
-              >
-                <RefreshCw className={`w-5 h-5 ${isLoading ? "animate-spin" : ""}`} />
-              </motion.button>
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  title="Refresh data"
+                >
+                  <RefreshCw className={`w-5 h-5 ${isLoading ? "animate-spin" : ""}`} />
+                </motion.button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Tab Bar */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex gap-1 p-1 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 w-fit">
-          {TABS.map((tab) => (
-            <motion.button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 ${activeTab === tab.id
+        {/* Tab Bar */}
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex gap-1 p-1 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 w-fit">
+            {TABS.map((tab) => (
+              <motion.button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 ${activeTab === tab.id
                   ? "bg-white dark:bg-white/10 text-amber-600 dark:text-amber-400 shadow-sm border border-gray-200 dark:border-white/15"
                   : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                }`}
-              whileTap={{ scale: 0.97 }}
-            >
-              <tab.icon className="w-4 h-4" />
-              {tab.label}
-              {tab.id === "purchases" && !isLoading && (
-                <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400">
-                  {totalPurchases}
-                </span>
-              )}
-              {tab.id === "available" && !isLoading && (
-                <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-gray-400">
-                  {unpurchasedFiles.length}
-                </span>
-              )}
-            </motion.button>
-          ))}
+                  }`}
+                whileTap={{ scale: 0.97 }}
+              >
+                <tab.icon className="w-4 h-4" />
+                {tab.label}
+                {tab.id === "purchases" && !isLoading && (
+                  <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400">
+                    {totalPurchases}
+                  </span>
+                )}
+                {tab.id === "available" && !isLoading && (
+                  <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-gray-400">
+                    {unpurchasedFiles.length}
+                  </span>
+                )}
+              </motion.button>
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* Content */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
-      {/* ── SHARED FILES BANNER (only when arrived via edu-login URL) ── */}
-      {linkedFiles.length > 0 && (
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 mb-2">
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-900/20 border border-amber-200 dark:border-amber-500/30 rounded-2xl p-6 shadow-md relative overflow-hidden"
-          >
-            {/* Top accent line */}
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 via-orange-500 to-red-500" />
-
-            {/* Header row */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5">
-              <div>
-                <h2 className="text-lg font-black text-amber-900 dark:text-amber-300">
-                  Files Shared With You
-                </h2>
-                <p className="text-sm text-amber-700 dark:text-amber-400 mt-0.5 font-medium">
-                  {linkedFiles.length} file{linkedFiles.length !== 1 ? "s" : ""} shared by the desktop application
-                  {linkedPurchased.length > 0 && (
-                    <span className="ml-2 text-green-600 dark:text-green-400">
-                      · {linkedPurchased.length} already owned
-                    </span>
-                  )}
-                </p>
-              </div>
-              <button
-                onClick={clearLinkedFiles}
-                className="self-start sm:self-auto text-xs font-bold px-3 py-1.5 rounded-lg border border-amber-300 dark:border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors"
-              >
-                Clear Filter
-              </button>
-            </div>
-
-            {/* File Cards Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-5">
-              {linkedFiles.map((file) => (
-                <FileCard
-                  key={file.id || file.tfd_id}
-                  file={file}
-                  showAction={false}
-                  onWrongApp={userAppName ? (f) => {
-                    if (f.category_name?.toLowerCase() !== userAppName) {
-                      setWrongAppModal(f.category_name);
-                    } else {
-                      navigate("/payment", { state: { tch_id: f.tch_id, files: [f.id] } });
-                    }
-                  } : null}
-                />
-              ))}
-            </div>
-
-            {/* ── Price Summary + Buy Now CTA ── */}
-            {linkedUnpurchased.length > 0 && (
+        {/* Content */}
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+          {/* ── SHARED FILES BANNER (only when arrived via edu-login URL) ── */}
+          {linkedFiles.length > 0 && (
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 mb-2">
               <motion.div
-                initial={{ opacity: 0, y: 8 }}
+                initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.15 }}
-                className="border-t border-amber-200 dark:border-amber-500/20 pt-4"
+                className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-900/20 border border-amber-200 dark:border-amber-500/30 rounded-2xl p-6 shadow-md relative overflow-hidden"
               >
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                  {/* Price breakdown */}
-                  <div>
-                    <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-1">
-                      Order Summary
-                    </p>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-2xl font-black text-amber-900 dark:text-white">
-                        {formatPrice(linkedTotalPrice)}
-                      </span>
-                      <span className="text-sm text-amber-600 dark:text-amber-400">
-                        for {linkedUnpurchased.length} file{linkedUnpurchased.length !== 1 ? "s" : ""}
-                      </span>
-                    </div>
-                    {linkedPurchased.length > 0 && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                        {linkedPurchased.length} file{linkedPurchased.length !== 1 ? "s" : ""} already owned — excluded from total
-                      </p>
-                    )}
-                  </div>
+                {/* Top accent line */}
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 via-orange-500 to-red-500" />
 
-                  {/* Buy All CTA */}
-                  <motion.button
-                    onClick={handleBuyAllLinked}
-                    whileHover={{ scale: 1.04 }}
-                    whileTap={{ scale: 0.97 }}
-                    className="flex items-center gap-2.5 px-6 py-3 rounded-xl font-bold text-sm text-white
+                {/* Header row */}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5">
+                  <div>
+                    <h2 className="text-lg font-black text-amber-900 dark:text-amber-300">
+                      Files Shared With You
+                    </h2>
+                    <p className="text-sm text-amber-700 dark:text-amber-400 mt-0.5 font-medium">
+                      {linkedFiles.length} file{linkedFiles.length !== 1 ? "s" : ""} shared by the desktop application
+                      {linkedPurchased.length > 0 && (
+                        <span className="ml-2 text-green-600 dark:text-green-400">
+                          · {linkedPurchased.length} already owned
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                  <button
+                    onClick={clearLinkedFiles}
+                    className="self-start sm:self-auto text-xs font-bold px-3 py-1.5 rounded-lg border border-amber-300 dark:border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors"
+                  >
+                    Clear Filter
+                  </button>
+                </div>
+
+                {/* File Cards Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-5">
+                  {linkedFiles.map((file) => (
+                    <FileCard
+                      key={file.id || file.tfd_id}
+                      file={file}
+                      showAction={false}
+                      onWrongApp={userAppName ? (f) => {
+                        if (f.category_name?.toLowerCase() !== userAppName) {
+                          setWrongAppModal(f.category_name);
+                        } else {
+                          navigate("/payment", { state: { tch_id: f.tch_id, files: [f.id] } });
+                        }
+                      } : null}
+                    />
+                  ))}
+                </div>
+
+                {/* ── Price Summary + Buy Now CTA ── */}
+                {linkedUnpurchased.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.15 }}
+                    className="border-t border-amber-200 dark:border-amber-500/20 pt-4"
+                  >
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                      {/* Price breakdown */}
+                      <div>
+                        <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-1">
+                          Order Summary
+                        </p>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-2xl font-black text-amber-900 dark:text-white">
+                            {formatPrice(linkedTotalPrice)}
+                          </span>
+                          <span className="text-sm text-amber-600 dark:text-amber-400">
+                            for {linkedUnpurchased.length} file{linkedUnpurchased.length !== 1 ? "s" : ""}
+                          </span>
+                        </div>
+                        {linkedPurchased.length > 0 && (
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                            {linkedPurchased.length} file{linkedPurchased.length !== 1 ? "s" : ""} already owned — excluded from total
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Buy All CTA */}
+                      <motion.button
+                        onClick={handleBuyAllLinked}
+                        whileHover={{ scale: 1.04 }}
+                        whileTap={{ scale: 0.97 }}
+                        className="flex items-center gap-2.5 px-6 py-3 rounded-xl font-bold text-sm text-white
                       bg-gradient-to-r from-amber-500 via-orange-500 to-red-500
                       hover:from-amber-600 hover:via-orange-600 hover:to-red-600
                       shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50
                       transition-all duration-300 whitespace-nowrap"
-                  >
-                    <ShoppingBag className="w-4 h-4" />
-                    Buy Now · {formatPrice(linkedTotalPrice)}
-                    <ChevronRight className="w-4 h-4" />
-                  </motion.button>
-                </div>
+                      >
+                        <ShoppingBag className="w-4 h-4" />
+                        Buy Now · {formatPrice(linkedTotalPrice)}
+                        <ChevronRight className="w-4 h-4" />
+                      </motion.button>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* All already purchased */}
+                {linkedUnpurchased.length === 0 && linkedPurchased.length > 0 && (
+                  <div className="border-t border-amber-200 dark:border-amber-500/20 pt-4 flex items-center gap-2">
+                    <Check className="w-4 h-4 text-green-600" />
+                    <p className="text-sm font-semibold text-green-700 dark:text-green-400">
+                      You already own all the shared files!
+                    </p>
+                  </div>
+                )}
               </motion.div>
-            )}
-
-            {/* All already purchased */}
-            {linkedUnpurchased.length === 0 && linkedPurchased.length > 0 && (
-              <div className="border-t border-amber-200 dark:border-amber-500/20 pt-4 flex items-center gap-2">
-                <Check className="w-4 h-4 text-green-600" />
-                <p className="text-sm font-semibold text-green-700 dark:text-green-400">
-                  You already own all the shared files!
-                </p>
-              </div>
-            )}
-          </motion.div>
-        </div>
-      )}
-
-      {/* ── DEBUG: No match warning ── */}
-      {linkedFileIds.length > 0 && linkedFiles.length === 0 && !isLoading && (
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
-          <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-500/30 rounded-xl p-4 flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 shrink-0" />
-            <div>
-              <p className="text-sm font-bold text-red-800 dark:text-red-400">Linked files not found</p>
-              <p className="text-xs text-red-600 dark:text-red-500 mt-0.5">
-                File IDs from URL: [{linkedFileIds.join(", ")}] — could not match any files. Please check the IDs sent by the desktop app.
-              </p>
             </div>
-          </div>
-        </div>
-      )}
+          )}
 
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-6 p-4 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20"
-          >
-            <div className="flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
-              <p className="text-sm text-red-600 dark:text-red-400 font-medium">{error}</p>
-            </div>
-          </motion.div>
-        )}
-
-        {/* Loading */}
-        {isLoading && (
-          <div className="flex items-center justify-center py-20">
-            <div className="flex flex-col items-center gap-3">
-              <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
-              <p className="text-sm text-gray-500 dark:text-gray-400">Loading your dashboard...</p>
-            </div>
-          </div>
-        )}
-
-        {/* Purchases Tab */}
-        {!isLoading && activeTab === "purchases" && (
-          <AnimatePresence mode="wait">
-            <motion.div
-              key="purchases-tab"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="space-y-8"
-            >
-              {totalPurchases === 0 ? (
-                <EmptyState
-                  icon={ShoppingBag}
-                  title="No Purchases Yet"
-                  description="You haven't purchased any files or subscriptions yet. Browse available files to get started."
-                  actionLabel="Browse Files"
-                  onAction={() => setActiveTab("available")}
-                />
-              ) : (
-                <>
-                  {/* File Purchases */}
-                  {totalFilePurchases > 0 && (
-                    <div className="space-y-4">
-                      <h2 className="text-sm uppercase tracking-wider font-bold text-gray-400 dark:text-gray-500">
-                        File Purchases
-                      </h2>
-                      {["road", "bridge", "railway", "metro"].map((cat) => (
-                        <CategoryPurchaseSection
-                          key={cat}
-                          category={cat}
-                          files={purchases?.file_purchases?.[cat] || []}
-                          apps={[]}
-                        />
-                      ))}
-                    </div>
-                  )}
-
-                  {/* App Purchases */}
-                  {totalAppPurchases > 0 && (
-                    <div className="space-y-4">
-                      <h2 className="text-sm uppercase tracking-wider font-bold text-gray-400 dark:text-gray-500">
-                        Application Subscriptions
-                      </h2>
-                      {["road", "bridge", "railway", "metro"].map((cat) => (
-                        <CategoryPurchaseSection
-                          key={`app-${cat}`}
-                          category={cat}
-                          files={[]}
-                          apps={purchases?.app_purchases?.[cat] || []}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </>
-              )}
-            </motion.div>
-          </AnimatePresence>
-        )}
-
-        {/* Available Files Tab */}
-        {!isLoading && activeTab === "available" && (
-          <AnimatePresence mode="wait">
-            <motion.div
-              key="available-tab"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-            >
-              {availableFiles.length === 0 ? (
-                <EmptyState
-                  icon={Package}
-                  title="No Files Available"
-                  description="There are no files available for purchase at this time. Please check back later."
-                />
-              ) : (
-                <div className="space-y-6">
-                  {/* Unpurchased Files */}
-                  {unpurchasedFiles.length > 0 && (
-                    <div>
-                      <h2 className="text-sm uppercase tracking-wider font-bold text-gray-400 dark:text-gray-500 mb-4">
-                        Available for Purchase ({unpurchasedFiles.length})
-                      </h2>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {unpurchasedFiles.map((file) => (
-                          <FileCard
-                            key={file.id}
-                            file={file}
-                            onWrongApp={userAppName ? handleFileCardClick : null}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Already Purchased */}
-                  {purchasedFiles.length > 0 && (
-                    <div>
-                      <h2 className="text-sm uppercase tracking-wider font-bold text-gray-400 dark:text-gray-500 mb-4">
-                        Already Owned ({purchasedFiles.length})
-                      </h2>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {purchasedFiles.map((file) => (
-                          <FileCard
-                            key={file.id}
-                            file={file}
-                            onWrongApp={userAppName ? handleFileCardClick : null}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  )}
+          {/* ── DEBUG: No match warning ── */}
+          {linkedFileIds.length > 0 && linkedFiles.length === 0 && !isLoading && (
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+              <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-500/30 rounded-xl p-4 flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-sm font-bold text-red-800 dark:text-red-400">Linked files not found</p>
+                  <p className="text-xs text-red-600 dark:text-red-500 mt-0.5">
+                    File IDs from URL: [{linkedFileIds.join(", ")}] — could not match any files. Please check the IDs sent by the desktop app.
+                  </p>
                 </div>
-              )}
+              </div>
+            </div>
+          )}
+
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-6 p-4 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20"
+            >
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+                <p className="text-sm text-red-600 dark:text-red-400 font-medium">{error}</p>
+              </div>
             </motion.div>
-          </AnimatePresence>
-        )}
+          )}
+
+          {/* Loading */}
+          {isLoading && (
+            <div className="flex items-center justify-center py-20">
+              <div className="flex flex-col items-center gap-3">
+                <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
+                <p className="text-sm text-gray-500 dark:text-gray-400">Loading your dashboard...</p>
+              </div>
+            </div>
+          )}
+
+          {/* Purchases Tab */}
+          {!isLoading && activeTab === "purchases" && (
+            <AnimatePresence mode="wait">
+              <motion.div
+                key="purchases-tab"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="space-y-8"
+              >
+                {totalPurchases === 0 ? (
+                  <EmptyState
+                    icon={ShoppingBag}
+                    title="No Purchases Yet"
+                    description="You haven't purchased any files or subscriptions yet. Browse available files to get started."
+                    actionLabel="Browse Files"
+                    onAction={() => setActiveTab("available")}
+                  />
+                ) : (
+                  <>
+                    {/* File Purchases */}
+                    {totalFilePurchases > 0 && (
+                      <div className="space-y-4">
+                        <h2 className="text-sm uppercase tracking-wider font-bold text-gray-400 dark:text-gray-500">
+                          File Purchases
+                        </h2>
+                        {["road", "bridge", "railway", "metro"].map((cat) => (
+                          <CategoryPurchaseSection
+                            key={cat}
+                            category={cat}
+                            files={purchases?.file_purchases?.[cat] || []}
+                            apps={[]}
+                          />
+                        ))}
+                      </div>
+                    )}
+
+                    {/* App Purchases */}
+                    {totalAppPurchases > 0 && (
+                      <div className="space-y-4">
+                        <h2 className="text-sm uppercase tracking-wider font-bold text-gray-400 dark:text-gray-500">
+                          Application Subscriptions
+                        </h2>
+                        {["road", "bridge", "railway", "metro"].map((cat) => (
+                          <CategoryPurchaseSection
+                            key={`app-${cat}`}
+                            category={cat}
+                            files={[]}
+                            apps={purchases?.app_purchases?.[cat] || []}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </motion.div>
+            </AnimatePresence>
+          )}
+
+          {/* Available Files Tab */}
+          {!isLoading && activeTab === "available" && (
+            <AnimatePresence mode="wait">
+              <motion.div
+                key="available-tab"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+              >
+                {availableFiles.length === 0 ? (
+                  <EmptyState
+                    icon={Package}
+                    title="No Files Available"
+                    description="There are no files available for purchase at this time. Please check back later."
+                  />
+                ) : (
+                  <div className="space-y-6">
+                    {/* Unpurchased Files */}
+                    {unpurchasedFiles.length > 0 && (
+                      <div>
+                        <h2 className="text-sm uppercase tracking-wider font-bold text-gray-400 dark:text-gray-500 mb-4">
+                          Available for Purchase ({unpurchasedFiles.length})
+                        </h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {unpurchasedFiles.map((file) => (
+                            <FileCard
+                              key={file.id}
+                              file={file}
+                              onWrongApp={userAppName ? handleFileCardClick : null}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Already Purchased */}
+                    {purchasedFiles.length > 0 && (
+                      <div>
+                        <h2 className="text-sm uppercase tracking-wider font-bold text-gray-400 dark:text-gray-500 mb-4">
+                          Already Owned ({purchasedFiles.length})
+                        </h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {purchasedFiles.map((file) => (
+                            <FileCard
+                              key={file.id}
+                              file={file}
+                              onWrongApp={userAppName ? handleFileCardClick : null}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </motion.div>
+            </AnimatePresence>
+          )}
+        </div>
       </div>
-    </div>
     </>
   );
 };

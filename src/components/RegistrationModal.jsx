@@ -59,7 +59,19 @@ const COUNTRY_CODES = [
 const CATEGORY_DOWNLOADS = {
   road: {
     label: "Road Design",
-    filename: "3D%20Bharat%20Road%20Design%20Application_v1.0.0.zip",
+    filename: "3D_Bharat_Road_Design_Application_v1.0.0.exe",
+  },
+  bridge: {
+    label: "Bridge Design",
+    filename: "",
+  },
+  railway: {
+    label: "Railway Design",
+    filename: "",
+  },
+  metro: {
+    label: "Metro Design",
+    filename: "",
   },
 };
 
@@ -424,7 +436,7 @@ const RegistrationModal = ({ isOpen, onClose, inline = false, forcedCategory = n
     setIsSubmitting(true);
     setSubmitError("");
     try {
-      const response = await registerUser(formData);
+      const response = await registerUser({ ...formData, category: selectedCategory });
       // Save password from register response — will show after OTP verification
       const password =
         response?.generated_password ||
@@ -436,6 +448,9 @@ const RegistrationModal = ({ isOpen, onClose, inline = false, forcedCategory = n
       setGeneratedPassword(password);
       setOtpSent(true);
       setOtpTimer(30);
+      
+      // Trigger download counts refresh on successful registration
+      window.dispatchEvent(new Event("refreshDownloadCounts"));
     } catch (error) {
       if (error.status === 400 && error.data?.message?.toLowerCase().includes("18 years")) {
         setAgeWarningMessage(error.data.message);

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSearchParams } from "react-router-dom";
 import RegistrationModal from "./RegistrationModal";
+import { BASE_URL } from "../services/api";
 
 // ── Category-wise content data (UNCHANGED from previous) ──────────────────────
 
@@ -150,6 +151,7 @@ const TrialInfoPage = () => {
   const [searchParams] = useSearchParams();
   const category = searchParams.get("category") || "Trial";
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [downloadStats, setDownloadStats] = useState({ files: 0, apps: 0 });
 
   const carouselSlides = [
     {
@@ -178,6 +180,37 @@ const TrialInfoPage = () => {
 
   useEffect(() => {
     window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
+    const fetchDownloadCounts = async () => {
+      try {
+        const response = await fetch(`${BASE_URL}/3dtrial/download-counts`);
+        const json = await response.json();
+        const stats = json.data || json;
+        if (stats) {
+          setDownloadStats({
+            files: stats.total_file_download_count || 0,
+            apps: stats.total_app_download_count || 0
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching download counts:", error);
+      }
+    };
+    
+    fetchDownloadCounts();
+
+    // Listen for custom event from RegistrationModal
+    const handleRefresh = () => {
+      fetchDownloadCounts();
+    };
+    
+    window.addEventListener("refreshDownloadCounts", handleRefresh);
+    
+    return () => {
+      window.removeEventListener("refreshDownloadCounts", handleRefresh);
+    };
   }, []);
 
   // Animation variants
@@ -229,6 +262,40 @@ const TrialInfoPage = () => {
       </div>
 
       <div className="max-w-[1400px] mx-auto z-10 relative px-4 sm:px-6 lg:px-12">
+
+        {/* Download Stats Corner Widget */}
+        {(downloadStats.files > 0 || downloadStats.apps > 0) && (
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="absolute top-4 right-4 md:top-2 md:right-8 lg:right-12 z-50 flex items-center gap-3 md:gap-4 bg-white/80 dark:bg-black/60 backdrop-blur-md border border-amber-500/20 shadow-[0_8px_30px_rgb(245,158,11,0.15)] rounded-2xl px-4 py-2.5 group hover:bg-white/95 dark:hover:bg-black/80 transition-all duration-300"
+          >
+            <div className="flex items-center gap-2">
+              <div className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider leading-none mb-0.5">App Downloads</span>
+                <span className="text-sm font-black text-gray-800 dark:text-white leading-none">
+                  {downloadStats.apps.toLocaleString()}<span className="text-amber-500">+</span>
+                </span>
+              </div>
+            </div>
+            
+            <div className="w-px h-6 bg-gray-300 dark:bg-gray-700 mx-1" />
+            
+            <div className="flex items-center gap-2">
+              <div className="flex flex-col">
+                <span className="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider leading-none mb-0.5">Files Downloaded</span>
+                <span className="text-sm font-black text-gray-800 dark:text-white leading-none">
+                  {downloadStats.files.toLocaleString()}<span className="text-amber-500">+</span>
+                </span>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {/* ======================================================= */}
         {/* HERO SECTION: Left (Heading + Boxes) | Right (Carousel) */}
