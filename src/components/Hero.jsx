@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import VideoShowcase from "./VideoShowcase";
 import { useRegistrationModal } from "../context/RegistrationModalContext";
 import ModulesShowcase from "./ModulesShowcase";
+import MeasurementStats from "./MeasurementStats";
 
 const backgroundVideos = [
   "/video/header-video1.mp4",
@@ -145,6 +146,9 @@ const Hero = () => {
 
 
         </motion.div>
+
+        {/* ── Measurement Stats Section ── */}
+        <MeasurementStats />
       </div>
 
       {/* Video Showcase - Fixed Position Component */}
