@@ -149,7 +149,20 @@ const getWhyChooseData = (cat) => {
 
 const TrialInfoPage = () => {
   const [searchParams] = useSearchParams();
-  const category = searchParams.get("category") || "Trial";
+  const rawCategory = searchParams.get("category") || "Trial";
+
+  // Normalize the category internally to handle spaces, plurals, or different URL formats
+  const getNormalizedCategory = (cat) => {
+    const c = cat.toLowerCase();
+    if (c.includes("railway") || c.includes("metro")) return "railway";
+    if (c.includes("road")) return "road";
+    if (c.includes("bridge")) return "bridge";
+    if (c.includes("measurement")) return "measurement";
+    return c;
+  };
+
+  const category = getNormalizedCategory(rawCategory);
+  
   const [currentSlide, setCurrentSlide] = useState(0);
   const [downloadStats, setDownloadStats] = useState({ files: 0, apps: 0 });
 
@@ -188,10 +201,26 @@ const TrialInfoPage = () => {
         const response = await fetch(`${BASE_URL}/3dtrial/download-counts`);
         const json = await response.json();
         if (json) {
-          setDownloadStats({
-            files: json.total_file_download_count || 0,
-            apps: json.total_app_download_count || 0
-          });
+          const countsArray = Array.isArray(json.data) ? json.data : (json.data?.data || []);
+
+          let files = json.total_file_download_count || 0;
+          let apps = json.total_app_download_count || 0;
+
+          if (countsArray.length > 0 && category && category.toLowerCase() !== "trial") {
+            const catLower = category.toLowerCase();
+            const matchedCat = countsArray.find(c => {
+              if (!c.category_name) return false;
+              const nameLower = c.category_name.toLowerCase();
+              return nameLower === catLower || nameLower.includes(catLower);
+            });
+
+            if (matchedCat) {
+              files = matchedCat.file_download_count || 0;
+              apps = matchedCat.app_download_count || 0;
+            }
+          }
+
+          setDownloadStats({ files, apps });
         }
       } catch (error) {
         console.error("Error fetching download counts:", error);
@@ -210,7 +239,7 @@ const TrialInfoPage = () => {
     return () => {
       window.removeEventListener("refreshDownloadCounts", handleRefresh);
     };
-  }, []);
+  }, [category]);
 
   // Animation variants
   const fadeUpVariant = {
@@ -243,7 +272,14 @@ const TrialInfoPage = () => {
     show: { scaleX: 1, opacity: 1, transition: { duration: 0.6, ease: "easeOut", originX: 0, delay: 0.1 } },
   };
 
-  const formattedCategory = category.charAt(0).toUpperCase() + category.slice(1);
+  const getCategoryDisplayName = (cat) => {
+    const c = cat.toLowerCase();
+    if (c === "railway" || c === "railways") return "Railways and Metro";
+    if (c === "measurement" || c === "measurements") return "Measurements";
+    return cat.charAt(0).toUpperCase() + cat.slice(1);
+  };
+
+  const formattedCategory = getCategoryDisplayName(category);
 
   return (
     <div className="min-h-screen bg-stone-100 dark:bg-black text-gray-800 dark:text-gray-200 relative">
