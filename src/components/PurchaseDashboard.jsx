@@ -45,6 +45,15 @@ const TABS = [
 ];
 
 /* ─── Helpers ─── */
+const mapCategory = (name) => {
+  if (!name) return "road";
+  const n = name.toLowerCase();
+  if (n.includes("road")) return "road";
+  if (n.includes("bridge")) return "bridge";
+  if (n.includes("railway") || n.includes("metro") || n.includes("train") || n.includes("station")) return "railway";
+  return "road"; // default fallback to road
+};
+
 const formatDate = (dateStr) => {
   if (!dateStr) return "—";
   return new Date(dateStr).toLocaleDateString("en-IN", {
@@ -64,9 +73,14 @@ const formatPrice = (amount) => {
 };
 
 /* ─── Category Section (for purchases) ─── */
-const CategoryPurchaseSection = ({ category, files, apps }) => {
+const CategoryPurchaseSection = ({ category, files = [], apps = [] }) => {
   const meta = CATEGORY_META[category] || CATEGORY_META.road;
-  const totalItems = (files?.length || 0) + (apps?.length || 0);
+
+  // Only show successfully completed or active purchases
+  const successfulFiles = files.filter((f) => f.status === "received" || f.status === 1 || f.status === "1");
+  const successfulApps = apps.filter((a) => a.status === "received" || a.status === 1 || a.status === "1");
+
+  const totalItems = successfulFiles.length + successfulApps.length;
 
   if (totalItems === 0) return null;
 
@@ -92,9 +106,9 @@ const CategoryPurchaseSection = ({ category, files, apps }) => {
       </div>
 
       {/* Purchased Files */}
-      {files?.length > 0 && (
+      {successfulFiles.length > 0 && (
         <div className="space-y-2">
-          {files.map((file, idx) => (
+          {successfulFiles.map((file, idx) => (
             <motion.div
               key={`file-${file.file_id || idx}`}
               initial={{ opacity: 0, x: -10 }}
@@ -145,10 +159,18 @@ const CategoryPurchaseSection = ({ category, files, apps }) => {
               </div>
 
               <div className="flex items-center gap-2 flex-shrink-0">
-                <span className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400 border border-green-200 dark:border-green-500/20">
-                  <Check className="w-3 h-3" />
-                  Purchased
-                </span>
+                <div className="flex items-center gap-2">
+                  {file.purchase_type === "Free" ? (
+                    <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-500/30">
+                      Free
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-500/30">
+                      <Check className="w-2.5 h-2.5" />
+                      Purchased
+                    </span>
+                  )}
+                </div>
                 {/* Download Button */}
                 {file.folder_location && (
                   <a
@@ -183,9 +205,9 @@ const CategoryPurchaseSection = ({ category, files, apps }) => {
       )}
 
       {/* Purchased Apps */}
-      {apps?.length > 0 && (
+      {successfulApps.length > 0 && (
         <div className="space-y-2">
-          {apps.map((app, idx) => (
+          {successfulApps.map((app, idx) => (
             <motion.div
               key={`app-${app.id || idx}`}
               initial={{ opacity: 0, x: -10 }}
@@ -338,19 +360,23 @@ const FileCard = ({ file, onWrongApp, showAction = true }) => {
     navigate("/payment", { state: { tch_id: file.tch_id, files: [file.id] } });
   };
 
+  const isPurchased = file.purchased === true || file.purchased === 1 || file.purchased === "1";
+  const isFree = file.purchase_type === "Free";
+  const showDownload = isPurchased || (isFree && file.folder_location);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ y: -4 }}
       className={`relative rounded-xl overflow-hidden border transition-all duration-300
-        ${file.purchased
+        ${isPurchased
           ? "border-green-200 dark:border-green-500/20 bg-white dark:bg-white/5"
           : "border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 hover:border-amber-300 dark:hover:border-amber-500/30 hover:shadow-xl hover:shadow-amber-500/10"
         }`}
     >
       {/* Purchased Badge */}
-      {file.purchased && (
+      {isPurchased && (
         <div className="absolute top-3 right-3 z-10">
           <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-green-500 text-white shadow-lg shadow-green-500/30">
             <Check className="w-3 h-3" />
@@ -418,7 +444,7 @@ const FileCard = ({ file, onWrongApp, showAction = true }) => {
           </div>
 
           {/* Action */}
-          {file.purchased ? (
+          {showDownload ? (
             file.folder_location ? (
               <a
                 href={file.folder_location}
@@ -428,12 +454,12 @@ const FileCard = ({ file, onWrongApp, showAction = true }) => {
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-green-500 hover:bg-green-600 shadow-md shadow-green-500/20 transition-all"
               >
                 <Download className="w-3.5 h-3.5" />
-                Download
+                {isPurchased ? "Download" : "Free Download"}
               </a>
             ) : (
               <span className="flex items-center gap-1 text-xs font-medium text-green-600 dark:text-green-400">
                 <Check className="w-3.5 h-3.5" />
-                Purchased
+                {isPurchased ? "Purchased" : "Available Free"}
               </span>
             )
           ) : showAction && (
@@ -543,22 +569,66 @@ const PurchaseDashboard = () => {
         ]);
 
         // Extract purchase data
-        const purchaseData = purchaseRes?.data || purchaseRes;
-        setPurchases(purchaseData);
+        let rawPurchaseData = purchaseRes?.data || purchaseRes;
+
+        // Ensure purchaseData has the correct object structure
+        let purchaseData = {
+          file_purchases: (rawPurchaseData && typeof rawPurchaseData === 'object' && rawPurchaseData.file_purchases) || {},
+          app_purchases: (rawPurchaseData && typeof rawPurchaseData === 'object' && rawPurchaseData.app_purchases) || {},
+          ...rawPurchaseData
+        };
 
         // Extract available files
         const filesData = filesRes?.data?.data || filesRes?.data || [];
         const allFiles = Array.isArray(filesData) ? filesData : [];
         setAvailableFiles(allFiles);
 
+        // SYNC: Force-include every single file that says 'purchased: true' into the Purchases Tab
+        console.log("[Dashboard] Aggressive Sync Start...");
+        if (allFiles.length > 0) {
+          allFiles.forEach(f => {
+            const isOwned =
+              f.purchased === true ||
+              f.purchased === 1 ||
+              f.purchased === "1" ||
+              f.purchased === "true" ||
+              (f.purchase_type === "Free" && f.folder_location);
+
+            if (isOwned) {
+              const cat = mapCategory(f.category_name);
+              if (!purchaseData.file_purchases[cat]) purchaseData.file_purchases[cat] = [];
+
+              // Find if this specific file ID is already in the list
+              const existingIdx = purchaseData.file_purchases[cat].findIndex(p => (p.file_id || p.id) === f.id);
+
+              const syncRecord = {
+                ...f,
+                file_id: f.id,
+                status: "received", // Guarantee visibility
+                purchased_on: f.updated_on || new Date().toISOString()
+              };
+
+              if (existingIdx !== -1) {
+                // UPDATE: If it exists, overwrite it with the rich data from the availableFiles API
+                purchaseData.file_purchases[cat][existingIdx] = {
+                  ...purchaseData.file_purchases[cat][existingIdx],
+                  ...syncRecord
+                };
+              } else {
+                // INSERT: If it's missing, add it
+                purchaseData.file_purchases[cat].push(syncRecord);
+              }
+            }
+          });
+        }
+        console.log("[Dashboard] Sync Complete.");
+        setPurchases(purchaseData);
+
         // Filter linked files if edu_file_ids exist
-        // Match against both f.id AND f.tfd_id since desktop app may send tfd_id
         if (linkedFileIds.length > 0) {
           const matched = allFiles.filter(
             (f) => linkedFileIds.includes(f.id) || linkedFileIds.includes(f.tfd_id)
           );
-          console.log("[EduLogin] linkedFileIds:", linkedFileIds);
-          console.log("[EduLogin] matched files:", matched);
           setLinkedFiles(matched);
         }
       } catch (err) {
@@ -581,11 +651,47 @@ const PurchaseDashboard = () => {
         getAvailableFiles(user.id),
       ])
         .then(([purchaseRes, filesRes]) => {
-          const purchaseData = purchaseRes?.data || purchaseRes;
-          setPurchases(purchaseData);
+          let rawPurchaseData = purchaseRes?.data || purchaseRes;
+          let purchaseData = {
+            file_purchases: (rawPurchaseData && typeof rawPurchaseData === 'object' && rawPurchaseData.file_purchases) || {},
+            app_purchases: (rawPurchaseData && typeof rawPurchaseData === 'object' && rawPurchaseData.app_purchases) || {},
+            ...rawPurchaseData
+          };
+
           const filesData = filesRes?.data?.data || filesRes?.data || [];
           const allFiles = Array.isArray(filesData) ? filesData : [];
           setAvailableFiles(allFiles);
+
+          // SYNC: Force-include every single file that says 'purchased: true' into the Purchases Tab
+          if (allFiles.length > 0) {
+            allFiles.forEach(f => {
+              const isOwned =
+                f.purchased === true || f.purchased === 1 || f.purchased === "1" || f.purchased === "true" ||
+                (f.purchase_type === "Free" && f.folder_location);
+
+              if (isOwned) {
+                const cat = mapCategory(f.category_name);
+                if (!purchaseData.file_purchases[cat]) purchaseData.file_purchases[cat] = [];
+                const existingIdx = purchaseData.file_purchases[cat].findIndex(p => (p.file_id || p.id) === f.id);
+                const syncRecord = {
+                  ...f,
+                  file_id: f.id,
+                  status: "received",
+                  purchased_on: f.updated_on || new Date().toISOString()
+                };
+                if (existingIdx !== -1) {
+                  purchaseData.file_purchases[cat][existingIdx] = {
+                    ...purchaseData.file_purchases[cat][existingIdx],
+                    ...syncRecord
+                  };
+                } else {
+                  purchaseData.file_purchases[cat].push(syncRecord);
+                }
+              }
+            });
+          }
+          setPurchases(purchaseData);
+
           if (linkedFileIds.length > 0) {
             setLinkedFiles(
               allFiles.filter(
@@ -625,8 +731,8 @@ const PurchaseDashboard = () => {
   };
 
   // Compute linked files split: purchased vs unpurchased
-  const linkedPurchased = linkedFiles.filter((f) => f.purchased);
-  const linkedUnpurchased = linkedFiles.filter((f) => !f.purchased);
+  const linkedPurchased = linkedFiles.filter((f) => f.purchased === true || f.purchased === 1 || f.purchased === "1");
+  const linkedUnpurchased = linkedFiles.filter((f) => f.purchased !== true && f.purchased !== 1 && f.purchased !== "1");
 
   // Calculate total price for unpurchased linked files
   const linkedTotalPrice = linkedUnpurchased.reduce(
@@ -660,15 +766,24 @@ const PurchaseDashboard = () => {
     });
   };
 
-  // Count total purchases
-  const totalFilePurchases =
-    (purchases?.file_purchases?.count || 0);
-  const totalAppPurchases =
-    (purchases?.app_purchases?.count || 0);
+  // Count total purchases (only successfully 'received' items)
+  const categoriesList = ["road", "bridge", "railway", "metro"];
+
+  const getSuccessfulCount = (dataMap) => {
+    if (!dataMap) return 0;
+    return categoriesList.reduce((total, cat) => {
+      const items = dataMap[cat] || [];
+      return total + items.filter((item) => item.status === "received" || item.status === 1 || item.status === "1").length;
+    }, 0);
+  };
+
+  const totalFilePurchases = getSuccessfulCount(purchases?.file_purchases);
+  const totalAppPurchases = getSuccessfulCount(purchases?.app_purchases);
+
   const totalPurchases = totalFilePurchases + totalAppPurchases;
 
-  const unpurchasedFiles = availableFiles.filter((f) => !f.purchased);
-  const purchasedFiles = availableFiles.filter((f) => f.purchased);
+  const unpurchasedFiles = availableFiles.filter((f) => f.purchased !== true && f.purchased !== 1 && f.purchased !== "1");
+  const purchasedFiles = availableFiles.filter((f) => f.purchased === true || f.purchased === 1 || f.purchased === "1");
 
   if (!isAuthenticated) return null;
 
@@ -1029,23 +1144,7 @@ const PurchaseDashboard = () => {
                       </div>
                     )}
 
-                    {/* Already Purchased */}
-                    {purchasedFiles.length > 0 && (
-                      <div>
-                        <h2 className="text-sm uppercase tracking-wider font-bold text-gray-400 dark:text-gray-500 mb-4">
-                          Already Owned ({purchasedFiles.length})
-                        </h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {purchasedFiles.map((file) => (
-                            <FileCard
-                              key={file.id}
-                              file={file}
-                              onWrongApp={userAppName ? handleFileCardClick : null}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                    {/* Already Purchased - REMOVED: Owned files are now only in the My Purchases tab */}
                   </div>
                 )}
               </motion.div>

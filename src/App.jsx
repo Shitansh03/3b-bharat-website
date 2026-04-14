@@ -133,7 +133,7 @@ const AppContent = () => {
             <Route path="/modules/design" element={<DesignWorkPage />} />
             <Route path="/modules/monitoring" element={<MonitoringPage />} />
             <Route
-              path="/edu-login/:userId/:fileIds"
+              path="/edu-login/:userId/:fileIds"                                  //**************************** */
               element={
                 <Suspense fallback={<PageLoader />}>
                   <EduLoginPage />
