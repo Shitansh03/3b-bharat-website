@@ -1,9 +1,18 @@
+// pre web-worker
+// import { useState, useEffect, useRef } from "react";
+// import { motion } from "framer-motion";
+// import VideoShowcase from "./VideoShowcase";
+// import { useRegistrationModal } from "../context/RegistrationModalContext";
+// import ModulesShowcase from "./ModulesShowcase";
+// import MeasurementStats from "./MeasurementStats";
+
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import VideoShowcase from "./VideoShowcase";
 import { useRegistrationModal } from "../context/RegistrationModalContext";
 import ModulesShowcase from "./ModulesShowcase";
 import MeasurementStats from "./MeasurementStats";
+import useVideoWorker from "../hooks/useVideoWorker";
 
 const backgroundVideos = [
   "/video/header-video1.mp4",
@@ -15,6 +24,9 @@ const Hero = () => {
   const video1Ref = useRef(null);
   const video2Ref = useRef(null);
   const { openModal } = useRegistrationModal();
+
+  // Load videos in background thread
+  const blobUrls = useVideoWorker(backgroundVideos);
 
   // Handle background video end - switch to next video
   const handleVideoEnd = () => {
@@ -52,32 +64,59 @@ const Hero = () => {
   return (
     <section
       id="home"
-      className="relative min-h-screen flex items-center justify-center overflow-hidden bg-stone-200 dark:bg-black transition-colors duration-300"
+      className="relative pt-24 min-h-screen flex items-center justify-center overflow-hidden bg-stone-200 dark:bg-black transition-colors duration-300"
     >
       {/* Video Background - Dual video crossfade for smooth transitions */}
       <div className="absolute inset-0 z-0 overflow-hidden bg-black">
         {/* Video 1 - Primary video with auto preload for LCP */}
+        {/*
+          // pre web-worker
+          <video
+            ref={video1Ref}
+            src={backgroundVideos[0]}
+            autoPlay
+            muted
+            playsInline
+            preload="auto"
+            onEnded={handleVideoEnd}
+            className="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out"
+            style={{ opacity: currentVideoIndex === 0 ? 1 : 0 }}
+          />
+        */}
         <video
           ref={video1Ref}
-          src={backgroundVideos[0]}
+          src={blobUrls[backgroundVideos[0]] || ""}
           autoPlay
           muted
           playsInline
           preload="auto"
           onEnded={handleVideoEnd}
           className="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out"
-          style={{ opacity: currentVideoIndex === 0 ? 1 : 0 }}
+          style={{ opacity: currentVideoIndex === 0 && blobUrls[backgroundVideos[0]] ? 1 : 0 }}
         />
         {/* Video 2 - Secondary video with metadata preload */}
+        {/*
+          // pre web-worker
+          <video
+            ref={video2Ref}
+            src={backgroundVideos[1]}
+            muted
+            playsInline
+            preload="metadata"
+            onEnded={handleVideoEnd}
+            className="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out"
+            style={{ opacity: currentVideoIndex === 1 ? 1 : 0 }}
+          />
+        */}
         <video
           ref={video2Ref}
-          src={backgroundVideos[1]}
+          src={blobUrls[backgroundVideos[1]] || ""}
           muted
           playsInline
           preload="metadata"
           onEnded={handleVideoEnd}
           className="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out"
-          style={{ opacity: currentVideoIndex === 1 ? 1 : 0 }}
+          style={{ opacity: currentVideoIndex === 1 && blobUrls[backgroundVideos[1]] ? 1 : 0 }}
         />
         {/* Dark overlay for better readability */}
         <div className="absolute inset-0 bg-black/30 dark:bg-black/60" />
@@ -94,7 +133,7 @@ const Hero = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
         >
-          <div className="inline-flex items-center gap-3 px-6 py-2 rounded-2xl bg-gradient-to-r from-amber-500/80 via-orange-500/80 to-red-500/80 border-2 border-white/40 backdrop-blur-md shadow-[0_0_30px_rgba(245,158,11,0.5)] ">
+          <div className="inline-flex items-center gap-5 md:gap-3 px-6 py-2 rounded-2xl bg-gradient-to-r from-amber-500/80 via-orange-500/80 to-red-500/80 border-2 border-white/40 backdrop-blur-md shadow-[0_0_30px_rgba(245,158,11,0.5)] ">
             <span className="text-white text-xl md:text-2xl font-bold tracking-wider uppercase drop-shadow-lg">
               To Achieve
             </span>
@@ -113,7 +152,7 @@ const Hero = () => {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4 }}
-          className="text-lg md:text-xl text-gray-200 max-w-2xl mx-auto mb-10 leading-relaxed tracking-wide"
+          className="text-lg md:text-xl text-gray-200 max-w-2xl mx-auto mb-10 md:mb-5 leading-relaxed tracking-wide"
         >
           A unified digital platform for planning, measurement, execution, and
           periodic monitoring of all construction projects across India.
@@ -127,7 +166,7 @@ const Hero = () => {
         >
           <motion.a
             href="/#features"
-            className="btn-primary"
+            className="btn-primary px-8 flex justify-center items-center rounded-xl font-medium"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
@@ -135,7 +174,7 @@ const Hero = () => {
           </motion.a>
           <motion.a
             href="#challenges"
-            className="px-8 py-4 border border-white/50 text-white rounded-xl font-medium hover:bg-white/10 backdrop-blur-sm transition-all duration-300"
+            className="px-8 py-3 border border-white/50 text-white rounded-xl font-medium hover:bg-white/10 backdrop-blur-sm transition-all duration-300"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >

@@ -794,9 +794,9 @@ const PurchaseDashboard = () => {
         appName={wrongAppModal}
         onClose={() => setWrongAppModal(null)}
       />
-      <div className="min-h-screen pb-12">
+      <div className="min-h-screen pb-12 ">
         {/* Hero Header */}
-        <div className="relative overflow-hidden">
+        <div className="relative overflow-hidden pt-20">
           <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-red-500/10 dark:from-amber-500/5 dark:via-orange-500/3 dark:to-red-500/5" />
           <div className="absolute inset-0">
             <div className="absolute top-0 right-0 w-96 h-96 rounded-full bg-amber-400/10 dark:bg-amber-400/5 blur-3xl" />

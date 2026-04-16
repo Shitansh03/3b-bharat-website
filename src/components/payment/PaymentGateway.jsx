@@ -608,7 +608,7 @@ const PaymentGateway = () => {
 
                 <div className="flex flex-col sm:flex-row gap-3">
                   <button
-                    onClick={() => navigate("/dashboard")}
+                    onClick={() => navigate("/user/dashboard")}
                     className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-white text-gray-900 font-semibold rounded-xl hover:bg-white/90 transition-colors"
                   >
                     Go to Dashboard

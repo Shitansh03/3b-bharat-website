@@ -384,7 +384,20 @@ const RegistrationModal = ({ isOpen, onClose, inline = false, forcedCategory = n
         newErrors.firstName = "First name is required";
       if (!formData.lastName.trim())
         newErrors.lastName = "Last name is required";
-      if (!formData.dob) newErrors.dob = "Date of birth is required";
+      if (!formData.dob) {
+        newErrors.dob = "Date of birth is required";
+      } else {
+        const birthDate = new Date(formData.dob);
+        const today = new Date();
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const m = today.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+          age--;
+        }
+        if (age < 18) {
+          newErrors.dob = "You must be at least 18 years old to register";
+        }
+      }
       if (!formData.email.trim()) newErrors.email = "Email is required";
       else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
         newErrors.email = "Invalid email format";
@@ -565,7 +578,7 @@ const RegistrationModal = ({ isOpen, onClose, inline = false, forcedCategory = n
 
             {/* Modal */}
             <motion.div
-              className={`relative w-full flex flex-col ${inline ? "bg-transparent h-full" : "max-w-lg max-h-[92vh] rounded-2xl bg-white/95 dark:bg-gray-950/95 backdrop-blur-2xl border border-gray-200/80 dark:border-white/10 shadow-2xl shadow-black/20 dark:shadow-black/50"}`}
+              className={`relative w-full flex flex-col items-center justify-center  ${inline ? "bg-transparent h-full" : "max-w-lg max-h-[92vh] rounded-2xl bg-white/95 dark:bg-gray-950/95 backdrop-blur-2xl border border-gray-200/80 dark:border-white/10 shadow-2xl shadow-black/20 dark:shadow-black/50"}`}
               initial={inline ? { opacity: 0 } : { scale: 0.92, opacity: 0, y: 30 }}
               animate={inline ? { opacity: 1 } : { scale: 1, opacity: 1, y: 0 }}
               exit={inline ? { opacity: 0 } : { scale: 0.92, opacity: 0, y: 30 }}
@@ -613,11 +626,11 @@ const RegistrationModal = ({ isOpen, onClose, inline = false, forcedCategory = n
               </div>
 
               {/* Step Indicator */}
-              <div className="px-6 sm:px-8 py-3">
+              <div className="px-3 pt-3 pb-7">
                 <div className="flex items-center justify-between">
                   {STEPS.map((s, i) => (
-                    <div key={s.id} className="flex items-center">
-                      <div className="flex flex-col items-center">
+                    <div key={s.id} className="flex items-center relative">
+                      <div className="flex flex-col items-center z-10 w-9">
                         <motion.div
                           className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-500 ${step > s.id
                             ? "bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg shadow-amber-500/30"
@@ -631,7 +644,7 @@ const RegistrationModal = ({ isOpen, onClose, inline = false, forcedCategory = n
                           {step > s.id ? <Check className="w-4 h-4" /> : s.id}
                         </motion.div>
                         <span
-                          className={`text-[10px] mt-1 font-medium ${step >= s.id
+                          className={`absolute top-11 w-24 text-center text-[10px] font-medium ${step >= s.id
                             ? "text-amber-600 dark:text-amber-400"
                             : "text-gray-400 dark:text-gray-500"
                             }`}
@@ -640,7 +653,7 @@ const RegistrationModal = ({ isOpen, onClose, inline = false, forcedCategory = n
                         </span>
                       </div>
                       {i < STEPS.length - 1 && (
-                        <div className="w-8 sm:w-16 h-0.5 mx-1 -mt-3 rounded-full bg-gray-200 dark:bg-white/10 overflow-hidden">
+                        <div className="w-8 h-0.5 mx-3 rounded-full bg-gray-200 dark:bg-white/10 overflow-hidden">
                           <motion.div
                             className="h-full bg-gradient-to-r from-amber-400 to-orange-500"
                             initial={{ width: "0%" }}

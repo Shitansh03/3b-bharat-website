@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { motion } from "framer-motion";
+import { motion, useInView } from "framer-motion";
 import {
   Layers,
   Box,
@@ -18,8 +18,11 @@ const Features = () => {
   const { isDark } = useTheme();
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [workflowSlideIndex, setWorkflowSlideIndex] = useState(0);
-  const [isVisible, setIsVisible] = useState(false);
+  // const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef(null);
+  
+  // Use framer-motion's useInView instead of custom IntersectionObserver
+  const isVisible = useInView(sectionRef, { threshold: 0.1, margin: "-50px" });
 
   const designLayerImages = [
     {
@@ -52,6 +55,7 @@ const Features = () => {
     },
   ];
 
+  /* before using framer motions UseInView
   // Visibility detection to pause animations when not in view
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -61,6 +65,7 @@ const Features = () => {
     if (sectionRef.current) observer.observe(sectionRef.current);
     return () => observer.disconnect();
   }, []);
+  */
 
   // Combined interval for both slideshows - only runs when visible
   useEffect(() => {
@@ -194,7 +199,7 @@ const Features = () => {
             variants={itemVariants}
             className="text-4xl md:text-5xl font-bold mb-6 tracking-tight"
           >
-            3D <span className="text-gradient">Design Tool</span>
+            3D <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 via-orange-500 to-red-500">Design Tool</span>
           </motion.h2>
           <motion.p
             variants={itemVariants}
@@ -330,7 +335,7 @@ const Features = () => {
               variants={itemVariants}
               className="text-3xl md:text-4xl font-bold mb-6 tracking-tight"
             >
-              The <span className="text-gradient">Merger Layer</span>
+              The <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 via-orange-500 to-red-500">Merger Layer</span>
             </motion.h3>
             <motion.p
               variants={itemVariants}
@@ -445,7 +450,7 @@ const Features = () => {
             className="text-3xl md:text-4xl font-bold mb-6 tracking-tight"
           >
             Precise Work{" "}
-            <span className="text-gradient">Progress Monitoring Flow</span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 via-orange-500 to-red-500">Progress Monitoring Flow</span>
           </motion.h3>
         </motion.div>
 

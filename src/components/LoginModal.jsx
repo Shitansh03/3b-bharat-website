@@ -11,6 +11,7 @@ import {
   Loader2,
   AlertCircle,
   UserCheck,
+  ChevronRight,
 } from "lucide-react";
 import { eduLoginUser } from "../services/auth";
 import { useAuth } from "../context/AuthContext";
@@ -109,6 +110,8 @@ const LoginModal = () => {
   const [errors, setErrors] = useState({});
   const [loginSuccess, setLoginSuccess] = useState(false);
   const [loginData, setLoginData] = useState(null);
+  // Controls the transition between the login form and the registration options selection
+  const [showRegisterOptions, setShowRegisterOptions] = useState(false);
 
   // Lock body scroll when modal is open
   useEffect(() => {
@@ -134,6 +137,7 @@ const LoginModal = () => {
         setErrors({});
         setLoginSuccess(false);
         setLoginData(null);
+        setShowRegisterOptions(false);
       }, 300);
     }
   }, [isOpen]);
@@ -173,7 +177,7 @@ const LoginModal = () => {
       // Auto-close after brief success animation
       setTimeout(() => {
         closeModal();
-        navigate("/dashboard");
+        navigate("/user/dashboard");
       }, 1500);
     } catch (err) {
       const errMsg =
@@ -265,32 +269,61 @@ const LoginModal = () => {
               <X className="w-5 h-5" />
             </motion.button>
 
-            {/* Header */}
+            {/* Header Area */}
+            {/* Swaps between Login Header and Registration Header using Framer Motion's AnimatePresence */}
             <div className="px-6 sm:px-8 pt-7 pb-3">
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex items-center gap-3"
-              >
-                <div className="p-2.5 rounded-xl bg-gradient-to-br from-amber-400 via-orange-500 to-red-500 shadow-lg shadow-amber-500/20">
-                  <LogIn className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-gray-800 dark:text-white">
-                    Welcome Back
-                  </h2>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Sign in to your 3D Bharat Education account
-                  </p>
-                </div>
-              </motion.div>
+              <AnimatePresence mode="wait">
+                {!showRegisterOptions ? (
+                  <motion.div
+                    key="login-header"
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    transition={{ duration: 0.2 }}
+                    className="flex items-center gap-3"
+                  >
+                    <div className="p-2.5 rounded-xl bg-gradient-to-br from-amber-400 via-orange-500 to-red-500 shadow-lg shadow-amber-500/20">
+                      <LogIn className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold text-gray-800 dark:text-white">
+                        Welcome Back
+                      </h2>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Sign in to your 3D Bharat Education account
+                      </p>
+                    </div>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="register-header"
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    transition={{ duration: 0.2 }}
+                    className="flex items-center gap-3"
+                  >
+                    <div className="p-2.5 rounded-xl bg-gradient-to-br from-amber-400 via-orange-500 to-red-500 shadow-lg shadow-amber-500/20">
+                      <UserCheck className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold text-gray-800 dark:text-white">
+                        Create Account
+                      </h2>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Select a category to register for
+                      </p>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Form Content */}
             <div className="px-6 sm:px-8 pb-4 overflow-y-auto flex-1" onKeyDown={handleKeyDown}>
               <AnimatePresence mode="wait">
                 {/* Login Form */}
-                {!loginSuccess && (
+                {!loginSuccess && !showRegisterOptions && (
                   <motion.div
                     key="login-form"
                     initial={{ opacity: 0, y: 20 }}
@@ -368,6 +401,50 @@ const LoginModal = () => {
                   </motion.div>
                 )}
 
+                {/* Registration Options View */}
+                {/* Dynamically generates the 4 premium registration category buttons and their routing params */}
+                {showRegisterOptions && !loginSuccess && (
+                  <motion.div
+                    key="register-options"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.3 }}
+                    className="space-y-3 py-2"
+                  >
+                    {[
+                      { name: "Road", param: "road", desc: "Road inspection and monitoring" },
+                      { name: "Bridge", param: "bridge", desc: "Bridge structural analysis" },
+                      { name: "Railways & Metro", param: "railways and metro", desc: "Track and OHE measurement" },
+                      { name: "Measurement", param: "measurement", desc: "General measurement tools" },
+                    ].map((item, idx) => (
+                      <motion.button
+                        key={item.name}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: idx * 0.1 }}
+                        onClick={() => {
+                          closeModal();
+                          navigate(`/trial-info?category=${item.param}`);
+                        }}
+                        className="w-full flex items-center justify-between p-4 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 hover:border-amber-300 dark:hover:border-amber-500/30 hover:bg-amber-50 dark:hover:bg-amber-500/10 transition-all group"
+                      >
+                        <div className="text-left">
+                          <h3 className="font-semibold text-gray-800 dark:text-gray-200 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                            {item.name}
+                          </h3>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                            {item.desc}
+                          </p>
+                        </div>
+                        <div className="w-8 h-8 rounded-full bg-white dark:bg-black/20 flex items-center justify-center shadow-sm border border-gray-100 dark:border-white/5 group-hover:scale-110 transition-transform">
+                          <ChevronRight className="w-4 h-4 text-amber-500" />
+                        </div>
+                      </motion.button>
+                    ))}
+                  </motion.div>
+                )}
+
                 {/* Login Success */}
                 {loginSuccess && (
                   <motion.div
@@ -415,7 +492,7 @@ const LoginModal = () => {
             </div>
 
             {/* Error Display */}
-            {error && (
+            {error && !showRegisterOptions && (
               <div className="px-6 sm:px-8 pb-4">
                 <motion.div
                   initial={{ opacity: 0, y: -5 }}
@@ -433,18 +510,32 @@ const LoginModal = () => {
             )}
 
             {/* Footer */}
+            {/* Toggles the bottom link between 'Register here' and 'Sign In' depending on the current view */}
             {!loginSuccess && (
               <div className="px-6 sm:px-8 pb-6 pt-1">
-                <p className="text-center text-xs text-gray-400 dark:text-gray-500">
-                  Don't have an account?{" "}
-                  <button
-                    type="button"
-                    onClick={closeModal}
-                    className="font-semibold text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors"
-                  >
-                    Register here
-                  </button>
-                </p>
+                {!showRegisterOptions ? (
+                  <p className="text-center text-xs text-gray-400 dark:text-gray-500">
+                    Don't have an account?{" "}
+                    <button
+                      type="button"
+                      onClick={() => setShowRegisterOptions(true)}
+                      className="font-semibold text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors"
+                    >
+                      Register here
+                    </button>
+                  </p>
+                ) : (
+                  <p className="text-center text-xs text-gray-400 dark:text-gray-500">
+                    Already have an account?{" "}
+                    <button
+                      type="button"
+                      onClick={() => setShowRegisterOptions(false)}
+                      className="font-semibold text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors"
+                    >
+                      Sign In
+                    </button>
+                  </p>
+                )}
               </div>
             )}
           </motion.div>

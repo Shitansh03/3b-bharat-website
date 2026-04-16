@@ -9,6 +9,7 @@ const OfficialVideoSection = () => {
   const [isMuted, setIsMuted] = useState(true);
   const [progress, setProgress] = useState(0);
   const videoRef = useRef(null);
+  const videoContainerRef = useRef(null);
   const containerRef = useRef(null);
   const sectionRef = useRef(null);
   const isInView = useInView(sectionRef, { once: true, margin: "-100px" });
@@ -17,6 +18,8 @@ const OfficialVideoSection = () => {
   const videoId = "7ij2WXuIWGM";
 
   // Load YouTube IFrame API
+  /* 
+  // before deferring YouTube API load based on scroll
   useEffect(() => {
     // Check if API is already loaded
     if (window.YT && window.YT.Player) {
@@ -35,12 +38,60 @@ const OfficialVideoSection = () => {
       initPlayer();
     };
   }, []);
+  */
+
+  // Load YouTube IFrame API only when section is near the viewport
+  useEffect(() => {
+    if (!isInView) return;
+
+    // Check if API is already loaded
+    if (window.YT && window.YT.Player) {
+      initPlayer();
+      return;
+    }
+
+    // Load the API
+    const tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    const firstScriptTag = document.getElementsByTagName('script')[0];
+    if (firstScriptTag && firstScriptTag.parentNode) {
+      firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+    } else {
+      document.head.appendChild(tag);
+    }
+
+    // API ready callback
+    window.onYouTubeIframeAPIReady = () => {
+      initPlayer();
+    };
+  }, [isInView]);
+
+    const toggleFullscreen = () => {
+    if (videoContainerRef.current) {
+      if (!document.fullscreenElement) {
+        videoContainerRef.current
+          .requestFullscreen()
+          .then(() => {
+            setIsFullscreen(true);
+          })
+          .catch((err) => console.log(err));
+      } else {
+        document
+          .exitFullscreen()
+          .then(() => {
+            setIsFullscreen(false);
+          })
+          .catch((err) => console.log(err));
+      }
+    }
+  }
+
 
   const initPlayer = () => {
     const newPlayer = new window.YT.Player('youtube-player', {
       videoId: videoId,
       playerVars: {
-        autoplay: 1,
+        autoplay: 0, // Disabled default autoplay so we can trigger it via scroll (isInView)
         mute: 1,
         loop: 1,
         playlist: videoId,
@@ -52,9 +103,8 @@ const OfficialVideoSection = () => {
       },
       events: {
         onReady: (event) => {
+          // Just save the player instance when ready, wait for scroll hook to trigger play
           setPlayer(event.target);
-          setIsPlaying(true);
-          startProgressTracking(event.target);
         },
         onStateChange: (event) => {
           if (event.data === window.YT.PlayerState.PLAYING) {
@@ -94,6 +144,14 @@ const OfficialVideoSection = () => {
   useEffect(() => {
     return () => stopProgressTracking();
   }, []);
+
+  // Watch for both the YouTube player to be ready AND the section to scroll into view.
+  // When both conditions are met, trigger the video to play automatically.
+  useEffect(() => {
+    if (player && isInView) {
+      player.playVideo();
+    }
+  }, [player, isInView]);
 
   const togglePlay = () => {
     if (!player) return;
@@ -331,7 +389,7 @@ const OfficialVideoSection = () => {
             className="fixed inset-0 z-[100] bg-black flex items-center justify-center"
           >
             <button
-              onClick={toggleFullscreen}
+              onClick={() => setIsFullscreen(false)}
               className="absolute top-6 right-6 z-10 w-12 h-12 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm transition-all"
             >
               <X className="w-6 h-6 text-white" />

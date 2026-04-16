@@ -40,6 +40,17 @@ const Enquiry = () => {
       return;
     }
 
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setStatus({
+        type: "error",
+        message: "Please enter a valid email address (e.g., name@example.com).",
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
     // Prepare email HTML template
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -188,7 +199,7 @@ const Enquiry = () => {
               variants={itemVariants}
               className="text-4xl md:text-5xl font-bold mb-6 tracking-tight"
             >
-              Connect with <span className="text-gradient">us</span>
+              Connect with <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 via-orange-500 to-red-500">us</span>
             </motion.h2>
 
             <motion.p

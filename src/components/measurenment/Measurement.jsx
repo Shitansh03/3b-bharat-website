@@ -288,7 +288,7 @@ const Measurement = () => {
               className={`flex items-center gap-3 px-6 py-4 rounded-2xl font-semibold text-sm transition-all duration-300 cursor-pointer ${
                 activeCategory === cat.id
                   ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg shadow-blue-500/30 -translate-y-1"
-                  : "bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-white/10 hover:bg-gray-200 dark:hover:bg-white/10 hover:-translate-y-0.5"
+                  : "bg-gray-100 dark:bg-white/10 text-gray-600  dark:text-gray-400 border border-gray-200 dark:border-white/10 hover:bg-gray-200 dark:hover:bg-white/20 hover:-translate-y-0.5"
               }`}
             >
               <cat.icon className="w-5 h-5" />
@@ -314,15 +314,15 @@ const Measurement = () => {
               transition={{ duration: 0.4 }}
             >
               {/* Railway Sub-tabs */}
-              <div className="flex justify-center gap-2 mb-8">
+              <div className="flex justify-start mb-8">
                 {railwayTabs.map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveRailwayTab(tab.id)}
-                    className={`flex items-center gap-2 px-5 py-3 rounded-xl font-medium text-sm transition-all duration-300 cursor-pointer ${
+                    className={`flex items-center gap-2 px-5 py-3 font-medium text-sm transition-all duration-300 cursor-pointer ${
                       activeRailwayTab === tab.id
                         ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900"
-                        : "text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/5"
+                        : "text-gray-600 dark:text-gray-400 border dark:bg-white/10 hover:bg-gray-200 border-gray-200 dark:border-white/10  dark:hover:bg-white/20 hover:-translate-y-0.5"
                     }`}
                   >
                     {tab.label}

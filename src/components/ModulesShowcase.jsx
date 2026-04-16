@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { useTheme } from "../context/ThemeContext";
 
 const modules = [
   {
@@ -33,14 +34,14 @@ const modules = [
 ];
 
 function ModulePickerModal({ onSelect, onClose }) {
+  const { isDark } = useTheme();
   return (
     <AnimatePresence>
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-center justify-center p-4"
-        style={{ background: "rgba(0,0,0,0.85)", backdropFilter: "blur(8px)" }}
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 dark:bg-black/85 bg-black/40 dark:backdrop-blur-[8px] backdrop-blur-[4px]"
         onClick={onClose}
       >
         <motion.div
@@ -48,12 +49,7 @@ function ModulePickerModal({ onSelect, onClose }) {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 30, scale: 0.95 }}
           transition={{ duration: 0.3, ease: "easeOut" }}
-          className="relative w-full max-w-2xl rounded-2xl overflow-hidden"
-          style={{
-            background: "linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%)",
-            border: "1px solid rgba(255,255,255,0.1)",
-            boxShadow: "0 25px 80px rgba(0,0,0,0.8)",
-          }}
+          className="relative w-full max-w-2xl rounded-2xl overflow-hidden dark:bg-gradient-to-br dark:from-neutral-950 dark:to-neutral-900 bg-gradient-to-br from-white to-gray-50 dark:border-white/10 border border-gray-200/50 dark:shadow-2xl shadow-lg"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Top accent line */}
@@ -69,14 +65,14 @@ function ModulePickerModal({ onSelect, onClose }) {
                 <p className="text-xs font-bold tracking-[0.2em] uppercase text-orange-400 mb-1">
                   3D Bharat Platform
                 </p>
-                <h2 className="text-white font-bold text-2xl">Explore Our Modules</h2>
-                <p className="text-gray-400 text-sm mt-1">
+                <h2 className="dark:text-white text-gray-900 font-bold text-2xl">Explore Our Modules</h2>
+                <p className="dark:text-gray-400 text-gray-600 text-sm mt-1">
                   Select a module to view its full details
                 </p>
               </div>
               <button
                 onClick={onClose}
-                className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-white hover:bg-white/10 transition-all"
+                className="w-8 h-8 flex items-center justify-center rounded-full dark:text-gray-400 dark:hover:text-white dark:hover:bg-white/10 text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-all"
               >
                 ✕
               </button>
@@ -92,15 +88,15 @@ function ModulePickerModal({ onSelect, onClose }) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.07 }}
                 onClick={() => onSelect(mod)}
-                className="flex items-center gap-4 p-4 rounded-xl text-left transition-all group"
+                className="flex items-center gap-4 p-4 rounded-xl text-left transition-all group dark:hover:border-opacity-100"
                 style={{
-                  background: `${mod.color}08`,
-                  border: `1px solid ${mod.color}25`,
+                  background: `${mod.color}${isDark ? "08" : "06"}`,
+                  border: `1px solid ${mod.color}${isDark ? "25" : "20"}`,
                 }}
                 whileHover={{
                   scale: 1.01,
                   borderColor: `${mod.color}60`,
-                  background: `${mod.color}12`,
+                  background: `${mod.color}${isDark ? "12" : "10"}`,
                 }}
                 whileTap={{ scale: 0.99 }}
               >
@@ -117,8 +113,8 @@ function ModulePickerModal({ onSelect, onClose }) {
                   >
                     {mod.badge}
                   </span>
-                  <h3 className="text-white font-semibold text-sm mt-1">{mod.title}</h3>
-                  <p className="text-gray-500 text-xs mt-0.5 truncate">{mod.tagline}</p>
+                  <h3 className="dark:text-white text-gray-900 font-semibold text-sm mt-1">{mod.title}</h3>
+                  <p className="dark:text-gray-500 text-gray-600 text-xs mt-0.5 truncate">{mod.tagline}</p>
                 </div>
                 <div
                   className="group-hover:translate-x-1 transition-transform text-lg flex-shrink-0"
@@ -149,7 +145,7 @@ export default function ModulesShowcase() {
       {/* Button */}
       <motion.button
         onClick={() => setShowPicker(true)}
-        className="relative inline-flex items-center gap-2 px-5 py-2 rounded-lg font-semibold text-sm overflow-hidden group"
+        className="relative inline-flex items-center justify-center gap-2 px-8 py-3 rounded-xl font-medium overflow-hidden group"
         style={{
           background: "linear-gradient(135deg, #F97316, #ea580c)",
           color: "#fff",
@@ -159,7 +155,7 @@ export default function ModulesShowcase() {
         whileTap={{ scale: 0.97 }}
       >
         <span className="absolute inset-0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-        <span>⚡</span>
+        <span className="text-xl">⚡</span>
         <span>Explore Modules</span>
       </motion.button>
 

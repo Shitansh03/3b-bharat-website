@@ -111,7 +111,7 @@ const EduLoginPage = () => {
         if (loggedInId === paramId) {
           // ── Validation 2 ──────────────────────────────────────────────
           // Same user is already logged in → skip modal, go to dashboard
-          navigate("/dashboard");
+          navigate("/user/dashboard");
         } else {
           // ── Validation 1 ──────────────────────────────────────────────
           // A DIFFERENT user is logged in → log them out, open modal so
@@ -131,7 +131,7 @@ const EduLoginPage = () => {
   // After any login (original flow), redirect to dashboard
   useEffect(() => {
     if (isAuthenticated) {
-      navigate("/dashboard");
+      navigate("/user/dashboard");
     }
   }, [isAuthenticated, navigate]);
 

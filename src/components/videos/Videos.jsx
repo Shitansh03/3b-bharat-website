@@ -1,5 +1,6 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import useVideoWorker from "../../hooks/useVideoWorker";
 import {
   Play,
   X,
@@ -303,9 +304,14 @@ const Videos = () => {
       label: "Metro",
       icon: Navigation,
       count: videos.filter((v) => v.category === "metro").length,
-      color: "from-blue-500 to-indigo-500",
+      color: "from-[#FFED00] to-[#FF0000]",
     },
   ];
+
+  // Initialize Web Worker for these videos
+  // Only fetching first 4 items to prevent browser memory overwhelm from 16 huge videos at once
+  const preloadUrls = useMemo(() => videos.slice(0, 4).map(v => v.url), [videos]);
+  const blobUrls = useVideoWorker(preloadUrls);
 
   const filteredVideos =
     activeCategory === "all"
@@ -460,8 +466,21 @@ const Videos = () => {
               >
                 {/* Video Preview Container */}
                 <div className="relative aspect-video overflow-hidden">
+                  {/*
+                    // pre web-worker
+                    <video
+                      src={video.url}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                      muted
+                      preload="metadata"
+                      playsInline
+                      onLoadedMetadata={(e) =>
+                        handleCardMetadataLoaded(video.id, e.target)
+                      }
+                    />
+                  */}
                   <video
-                    src={video.url}
+                    src={blobUrls[video.url] || video.url}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                     muted
                     preload="metadata"
@@ -582,9 +601,23 @@ const Videos = () => {
                 ref={videoContainerRef}
                 className={`relative rounded-2xl overflow-hidden bg-black shadow-2xl ${isFullscreen ? "flex items-center justify-center" : ""}`}
               >
+                {/*
+                  // pre web-worker
+                  <video
+                    ref={videoRef}
+                    src={selectedVideo.url}
+                    className={`w-full object-contain ${isFullscreen ? "max-h-screen" : "max-h-[60vh]"}`}
+                    onClick={togglePlay}
+                    onPlay={() => setIsPlaying(true)}
+                    onPause={() => setIsPlaying(false)}
+                    onTimeUpdate={handleTimeUpdate}
+                    onLoadedMetadata={handleLoadedMetadata}
+                    controlsList="nodownload"
+                  />
+                */}
                 <video
                   ref={videoRef}
-                  src={selectedVideo.url}
+                  src={blobUrls[selectedVideo.url] || selectedVideo.url}
                   className={`w-full object-contain ${isFullscreen ? "max-h-screen" : "max-h-[60vh]"}`}
                   onClick={togglePlay}
                   onPlay={() => setIsPlaying(true)}

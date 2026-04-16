@@ -282,7 +282,7 @@ const TrialInfoPage = () => {
   const formattedCategory = getCategoryDisplayName(category);
 
   return (
-    <div className="min-h-screen bg-stone-100 dark:bg-black text-gray-800 dark:text-gray-200 relative">
+    <div className="min-h-screen bg-stone-100 dark:bg-black text-gray-800 dark:text-gray-200 relative pt-32">
 
       {/* Fixed Background Image — faded so carousel slides attract attention */}
       <div

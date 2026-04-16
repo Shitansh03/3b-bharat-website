@@ -1,5 +1,5 @@
 import { useState, useEffect, Suspense, useRef } from "react";
-import { motion } from "framer-motion";
+import { motion, useInView } from "framer-motion";
 import { AlertTriangle, FileX, Eye, Puzzle } from "lucide-react";
 import { Canvas } from "@react-three/fiber";
 import ChaosParticles from "./three/ChaosParticles";
@@ -38,8 +38,12 @@ const Challenges = () => {
   const { isDark } = useTheme(); // Use context instead of MutationObserver
   const rafRef = useRef(null);
   const sectionRef = useRef(null);
-  const [isVisible, setIsVisible] = useState(false);
+  // const [isVisible, setIsVisible] = useState(false);
 
+  // Use framer-motion's useInView instead of custom IntersectionObserver
+  const isVisible = useInView(sectionRef, { threshold: 0.1, margin: "-50px" });
+
+  /* before using framer motions UseInView
   // Visibility detection to pause Three.js when not in view
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -49,6 +53,7 @@ const Challenges = () => {
     if (sectionRef.current) observer.observe(sectionRef.current);
     return () => observer.disconnect();
   }, []);
+  */
 
   // Throttled mouse tracking with RAF
   useEffect(() => {

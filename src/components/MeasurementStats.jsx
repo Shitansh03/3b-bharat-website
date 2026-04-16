@@ -70,9 +70,10 @@ const MeasurementStats = () => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.8, delay: 0.8 }}
-      className="relative w-full px-4 py-12"
+      className="relative w-full px-4 py-6"
     >
       <motion.div
+        key={`stats-container-${loading}`}
         variants={containerVariants}
         initial="hidden"
         animate="visible"
@@ -84,8 +85,7 @@ const MeasurementStats = () => {
             <motion.div
               key={measurement.id}
               variants={itemVariants}
-              whileHover={{ scale: 1.02 }}
-              transition={{ type: "spring", stiffness: 300, damping: 15 }}
+              whileHover={{ scale: 1.02, transition: { type: "spring", stiffness: 300, damping: 15 } }}
               className="group h-full"
             >
               <div

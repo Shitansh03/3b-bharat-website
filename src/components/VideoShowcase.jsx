@@ -1,5 +1,9 @@
-import { useState, useRef, useMemo } from "react";
+// pre web-worker
+// import { useState, useRef, useMemo } from "react";
+// import { motion } from "framer-motion";
+import { useState, useRef, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
+import useVideoWorker from "../hooks/useVideoWorker";
 import { Play, Pause, Monitor, ExternalLink, X } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -91,6 +95,9 @@ const VideoShowcase = () => {
     return showcaseVideos[randomIndex];
   }, []);
 
+  // Use web worker to fetch the random video in background
+  const blobUrls = useVideoWorker([randomVideo.url]);
+
   // Toggle play/pause
   const togglePlay = () => {
     if (videoRef.current) {
@@ -150,9 +157,23 @@ const VideoShowcase = () => {
 
           {/* Video Container - Larger aspect ratio */}
           <div className="relative" style={{ aspectRatio: '16/10' }}>
+            {/*
+              // pre web-worker
+              <video
+                ref={videoRef}
+                src={randomVideo.url}
+                autoPlay
+                muted
+                loop
+                playsInline
+                onPlay={() => setIsPlaying(true)}
+                onPause={() => setIsPlaying(false)}
+                className="w-full h-full object-cover"
+              />
+            */}
             <video
               ref={videoRef}
-              src={randomVideo.url}
+              src={blobUrls[randomVideo.url] || randomVideo.url}
               autoPlay
               muted
               loop

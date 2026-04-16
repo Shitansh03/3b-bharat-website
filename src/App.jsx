@@ -7,12 +7,22 @@ import {
 } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
-import OfficialVideoSection from "./components/OfficialVideoSection";
-import Challenges from "./components/Challenges";
-import About from "./components/About";
-import Features from "./components/Features";
-import Create from "./components/Create";
-import Enquiry from "./components/Enquiry";
+// Pre-lazy loading imports
+// import OfficialVideoSection from "./components/OfficialVideoSection";
+// import Challenges from "./components/Challenges";
+// import About from "./components/About";
+// import Features from "./components/Features";
+// import Create from "./components/Create";
+// import Enquiry from "./components/Enquiry";
+
+// Lazy-loaded homepage components for performance
+const OfficialVideoSection = lazy(() => import("./components/OfficialVideoSection"));
+const Challenges = lazy(() => import("./components/Challenges"));
+const About = lazy(() => import("./components/About"));
+const Features = lazy(() => import("./components/Features"));
+const Create = lazy(() => import("./components/Create"));
+const Enquiry = lazy(() => import("./components/Enquiry"));
+
 import Footer from "./components/Footer";
 import { ThemeProvider } from "./context/ThemeContext";
 import {
@@ -23,12 +33,13 @@ import { LoginModalProvider, useLoginModal } from "./context/LoginModalContext";
 import { AuthProvider } from "./context/AuthContext";
 import RegistrationModal from "./components/RegistrationModal";
 import LoginModal from "./components/LoginModal";
-import InspectionPage from "./components/InspectionPage";
-import DesignWorkPage from "./components/DesignWorkPage";
-import MonitoringPage from "./components/MonitoringPage";
-import TrialInfoPage from "./components/TrialInfoPage";
+import NotFound from "./components/NotFound";
 
 // Lazy load heavy page components for better initial load performance
+const InspectionPage = lazy(() => import("./components/InspectionPage"));
+const DesignWorkPage = lazy(() => import("./components/DesignWorkPage"));
+const MonitoringPage = lazy(() => import("./components/MonitoringPage"));
+const TrialInfoPage = lazy(() => import("./components/TrialInfoPage"));
 const Measurement = lazy(() => import("./components/measurenment/Measurement"));
 const Videos = lazy(() => import("./components/videos/Videos"));
 const PaymentGateway = lazy(() => import("./components/payment/PaymentGateway"));
@@ -69,12 +80,23 @@ const HomePage = () => {
   return (
     <>
       <Hero />
-      <OfficialVideoSection />
-      <About />
-      <Challenges />
-      <Features />
-      <Create />
-      <Enquiry />
+      {/* 
+        // Before lazy loading 
+        <OfficialVideoSection />
+        <About />
+        <Challenges />
+        <Features />
+        <Create />
+        <Enquiry />
+      */}
+      <Suspense fallback={<PageLoader />}>
+        <OfficialVideoSection />
+        <About />
+        <Challenges />
+        <Features />
+        <Create />
+        <Enquiry />
+      </Suspense>
     </>
   );
 };
@@ -93,10 +115,17 @@ const AppContent = () => {
         <Navbar />
 
         {/* Page Content - add top padding on non-home pages to offset fixed navbar */}
-        <main id="main-content" className={isHome ? "" : "pt-20"}>
+        <main id="main-content" >
           <Routes>
             <Route path="/" element={<HomePage />} />
-            <Route path="/trial-info" element={<TrialInfoPage />} />
+            <Route
+              path="/trial-info"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <TrialInfoPage />
+                </Suspense>
+              }
+            />
             <Route
               path="/measurement"
               element={
@@ -122,25 +151,49 @@ const AppContent = () => {
               }
             />
             <Route
-              path="/dashboard"
+              path="/user/dashboard"
               element={
                 <Suspense fallback={<PageLoader />}>
                   <PurchaseDashboard />
                 </Suspense>
               }
             />
-            <Route path="/modules/inspection" element={<InspectionPage />} />
-            <Route path="/modules/design" element={<DesignWorkPage />} />
-            <Route path="/modules/monitoring" element={<MonitoringPage />} />
             <Route
-              path="/edu-login/:userId/:fileIds"                                  //**************************** */
+              path="/modules/inspection"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <InspectionPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/modules/design"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <DesignWorkPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/modules/monitoring"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <MonitoringPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/edu-login/:userId/:fileIds"
               element={
                 <Suspense fallback={<PageLoader />}>
                   <EduLoginPage />
                 </Suspense>
               }
             />
+            {/* Fallback route for 404 Not Found */}
+            <Route path="*" element={<NotFound />} />
           </Routes>
+          
         </main>
 
         {/* Shared Footer */}

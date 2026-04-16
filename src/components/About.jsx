@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useInView } from "framer-motion";
 import {
   Construction,
   Landmark,
@@ -78,9 +78,13 @@ const About = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const [imagesLoaded, setImagesLoaded] = useState(false);
-  const [isVisible, setIsVisible] = useState(false);
+  // const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef(null);
 
+  // Use framer-motion's useInView instead of custom IntersectionObserver
+  const isVisible = useInView(sectionRef, { threshold: 0.1, margin: "-50px" });
+
+  /* before using framer motions UseInView
   // Visibility detection to pause animation when not in view
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -90,6 +94,7 @@ const About = () => {
     if (sectionRef.current) observer.observe(sectionRef.current);
     return () => observer.disconnect();
   }, []);
+  */
 
   // Preload first 3 images initially, lazy load the rest
   useEffect(() => {
@@ -214,7 +219,7 @@ const About = () => {
               variants={itemVariants}
               className="text-4xl md:text-5xl font-bold mb-6 tracking-tight"
             >
-              What is <span className="text-gradient">3D Bharat</span>?
+              What is <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 via-orange-500 to-red-500">3D Bharat</span>?
             </motion.h2>
 
             <motion.div
@@ -281,24 +286,31 @@ const About = () => {
           </motion.div>
 
           {/* Right - Creative Image Slider */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 30 }}
-            whileInView={{ opacity: 1, scale: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-            className="relative group"
-            onMouseEnter={() => setIsAutoPlaying(false)}
-            onMouseLeave={() => setIsAutoPlaying(true)}
-          >
+          <div className="relative">
+            {/* Decorative elements (Moved OUTSIDE the animation tree to prevent extreme GPU lag) */}
+            <div className="absolute -z-0 top-1/2 left-1/2 w-80 h-80 bg-emerald-500/10 dark:bg-emerald-500/5 rounded-full blur-3xl pointer-events-none transition-colors duration-300" style={{ transform: "translate3d(-50%, -50%, 0)" }} />
+            <div className="absolute -z-0 top-0 right-0 w-40 h-40 bg-blue-500/10 dark:bg-blue-500/5 rounded-full blur-2xl pointer-events-none" style={{ transform: "translate3d(0, 0, 0)" }} />
+            <div className="absolute -z-0 bottom-0 left-0 w-32 h-32 bg-purple-500/10 dark:bg-purple-500/5 rounded-full blur-2xl pointer-events-none" style={{ transform: "translate3d(0, 0, 0)" }} />
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 30 }}
+              whileInView={{ opacity: 1, scale: 1, y: 0 }}
+              viewport={{ once: true, margin: "-100px" }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="relative z-10 group"
+              style={{ willChange: "transform, opacity" }}
+              onMouseEnter={() => setIsAutoPlaying(false)}
+              onMouseLeave={() => setIsAutoPlaying(true)}
+            >
             {/* Main Slider Container */}
             <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-black/20 dark:shadow-black/40">
               {/* Animated Gradient Border */}
-              <div className="absolute -inset-[2px] rounded-2xl overflow-hidden">
+              <div className="absolute -inset-[2px] rounded-2xl overflow-hidden pointer-events-none">
                 <div
-                  className="absolute inset-0 bg-gradient-to-r from-emerald-500 via-blue-500 to-purple-500 animate-spin-slow opacity-60 group-hover:opacity-100 transition-opacity duration-500"
+                  className="absolute top-1/2 left-1/2 w-[200%] h-[200%] bg-gradient-to-r from-emerald-500 via-blue-500 to-purple-500 animate-spin-slow opacity-60 group-hover:opacity-100 transition-opacity duration-500 z-0"
                   style={{
-                    backgroundSize: "400% 400%",
-                    animation: "gradient-rotate 8s linear infinite",
+                    transformOrigin: "center center",
+                    margin: "-100% 0 0 -100%"
                   }}
                 />
               </div>
@@ -433,11 +445,11 @@ const About = () => {
 
             {/* Slide Counter */}
             <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              whileInView={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, y: -20, x: "-50%" }}
+              whileInView={{ opacity: 1, y: 0, x: "-50%" }}
               viewport={{ once: true }}
               transition={{ delay: 0.3, duration: 0.6 }}
-              className="absolute -top-3 left-1/2 -translate-x-1/2 glass-theme backdrop-blur-md bg-white/90 dark:bg-black/60 px-4 py-2 rounded-full shadow-lg border border-white/30 dark:border-white/10"
+              className="absolute -top-3 left-1/2 z-20 glass-theme backdrop-blur-md bg-white/90 dark:bg-black/60 px-4 py-2 rounded-full shadow-lg border border-white/30 dark:border-white/10 flex items-center justify-center min-w-[80px]"
             >
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 <span className="text-emerald-500 font-bold">
@@ -448,11 +460,8 @@ const About = () => {
               </span>
             </motion.div>
 
-            {/* Decorative elements */}
-            <div className="absolute -z-10 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-emerald-500/10 dark:bg-emerald-500/5 rounded-full blur-3xl pointer-events-none transition-colors duration-300" />
-            <div className="absolute -z-10 top-0 right-0 w-40 h-40 bg-blue-500/10 dark:bg-blue-500/5 rounded-full blur-2xl pointer-events-none" />
-            <div className="absolute -z-10 bottom-0 left-0 w-32 h-32 bg-purple-500/10 dark:bg-purple-500/5 rounded-full blur-2xl pointer-events-none" />
           </motion.div>
+          </div>
         </div>
       </div>
     </section>

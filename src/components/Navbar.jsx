@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { ChevronDown, LogIn, LogOut, User } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import { useTheme } from "../context/ThemeContext";
@@ -19,12 +19,27 @@ const Navbar = () => {
   const { openModal: openLoginModal } = useLoginModal();
   const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Determine if the current page has a light background beneath the transparent navbar.
+  const isLightBgPage =
+    location.pathname.startsWith("/user/dashboard") ||
+    location.pathname.startsWith("/trial-info") ||
+    location.pathname.startsWith("/modules/");
+  const useDarkText = scrolled || isLightBgPage;
 
   useEffect(() => {
+    let ticking = false;
     const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          setScrolled(window.scrollY > 50);
+          ticking = false;
+        });
+        ticking = true;
+      }
     };
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
@@ -59,9 +74,9 @@ const Navbar = () => {
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled
-        ? "bg-stone-100/80 dark:bg-black/80 backdrop-blur-xl border-b border-gray-300 dark:border-white/10"
-        : "bg-transparent"
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 border-b ${scrolled || mobileMenuOpen
+        ? "bg-stone-100/90 dark:bg-black/90 backdrop-blur-xl border-gray-300 dark:border-white/10"
+        : "bg-transparent border-transparent"
         }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -69,24 +84,25 @@ const Navbar = () => {
           {/* Logo */}
           <motion.a
             href="/"
-            className="flex items-center space-x-2"
+            className="flex items-center space-x-2 relative w-32 h-32"
             whileHover={{ scale: 1.05 }}
             transition={{ type: "spring", stiffness: 400 }}
           >
-            <span className="text-2xl font-bold tracking-tight text-gray-800 dark:text-white">
+            <span className="text-2xl font-bold tracking-tight text-gray-800 dark:text-white block w-full h-full">
               <img
-                src={
-                  scrolled
-                    ? isDark
-                      ? "/images/logo.png"
-                      : "/images/logo2.png"
-                    : "/images/logo.png"
-                }
+                src="/images/logo.png"
                 alt="3D Bharat - Precise Work Progress Monitoring"
-                className="w-32 h-32"
+                className={`absolute inset-0 w-32 h-32 transition-opacity duration-300 ${(useDarkText || mobileMenuOpen) && !isDark ? "opacity-0" : "opacity-100"}`}
                 width="128"
                 height="128"
-              />{" "}
+              />
+              <img
+                src="/images/logo2.png"
+                alt="3D Bharat - Precise Work Progress Monitoring"
+                className={`absolute inset-0 w-32 h-32 transition-opacity duration-300 ${(useDarkText || mobileMenuOpen) && !isDark ? "opacity-100" : "opacity-0"}`}
+                width="128"
+                height="128"
+              />
             </span>
           </motion.a>
 
@@ -96,7 +112,7 @@ const Navbar = () => {
               <motion.a
                 key={item.name}
                 href={item.href}
-                className={`text-sm font-medium transition-colors duration-300 tracking-wide ${scrolled ? "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white" : "text-white/90 hover:text-white"}`}
+                className={`text-sm font-medium transition-colors duration-300 tracking-wide ${useDarkText ? "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white" : "text-white/90 hover:text-white"}`}
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1, duration: 0.4 }}
@@ -110,7 +126,7 @@ const Navbar = () => {
             <div className="relative" ref={trialsRef}>
               <motion.button
                 onClick={() => setTrialsOpen((prev) => !prev)}
-                className={`flex items-center gap-1 text-sm font-medium transition-colors duration-300 tracking-wide ${scrolled ? "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white" : "text-white/90 hover:text-white"}`}
+                className={`flex items-center gap-1 text-sm font-medium transition-colors duration-300 tracking-wide ${useDarkText ? "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white" : "text-white/90 hover:text-white"}`}
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: navItems.length * 0.1, duration: 0.4 }}
@@ -160,15 +176,15 @@ const Navbar = () => {
             {/* Auth Buttons */}
             {isAuthenticated ? (
               <div className="flex items-center gap-3">
-                <Link to="/dashboard" className={`flex items-center gap-2 px-3 py-1.5 rounded-lg hover:ring-2 hover:ring-amber-400/30 transition-all ${scrolled ? "bg-gray-100 dark:bg-white/10" : "bg-white/10"}`}>
-                  <User className={`w-4 h-4 ${scrolled ? "text-gray-600 dark:text-gray-300" : "text-white/80"}`} />
-                  <span className={`text-sm font-medium ${scrolled ? "text-gray-700 dark:text-gray-200" : "text-white/90"}`}>
+                <Link to="/user/dashboard" className={`flex items-center gap-2 px-3 py-1.5 rounded-lg hover:ring-2 hover:ring-amber-400/30 transition-all ${useDarkText ? "bg-gray-100 dark:bg-white/10" : "bg-white/10"}`}>
+                  <User className={`w-4 h-4 ${useDarkText ? "text-gray-600 dark:text-gray-300" : "text-white/80"}`} />
+                  <span className={`text-sm font-medium ${useDarkText ? "text-gray-700 dark:text-gray-200" : "text-white/90"}`}>
                     {user?.first_name || "User"}
                   </span>
                 </Link>
                 <motion.button
                   onClick={logout}
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${scrolled ? "border border-gray-400 dark:border-white/30 text-gray-700 dark:text-white hover:bg-red-50 hover:border-red-300 hover:text-red-600 dark:hover:bg-red-500/10 dark:hover:border-red-500/30 dark:hover:text-red-400" : "border border-white/50 text-white hover:bg-red-500/20 hover:border-red-400/50"}`}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${useDarkText ? "border border-gray-400 dark:border-white/30 text-gray-700 dark:text-white hover:bg-red-50 hover:border-red-300 hover:text-red-600 dark:hover:bg-red-500/10 dark:hover:border-red-500/30 dark:hover:text-red-400" : "border border-white/50 text-white hover:bg-red-500/20 hover:border-red-400/50"}`}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
@@ -180,7 +196,7 @@ const Navbar = () => {
               <div className="flex items-center gap-3">
                 <motion.button
                   onClick={openLoginModal}
-                  className={`flex items-center gap-1.5 px-5 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 ${scrolled ? "text-gray-700 dark:text-white hover:text-amber-600 dark:hover:text-amber-400" : "text-white/90 hover:text-white"}`}
+                  className={`flex items-center gap-1.5 px-5 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 ${useDarkText ? "text-gray-700 dark:text-white hover:text-amber-600 dark:hover:text-amber-400" : "text-white/90 hover:text-white"}`}
                   initial={{ opacity: 0, y: -20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.35, duration: 0.4 }}
@@ -191,7 +207,7 @@ const Navbar = () => {
                 </motion.button>
                 <motion.a
                   href="/#enquiry"
-                  className={`px-6 py-2.5 border rounded-lg text-sm font-medium transition-all duration-300 ${scrolled ? "border-gray-400 dark:border-white/30 text-gray-700 dark:text-white hover:bg-gray-800 hover:text-white dark:hover:bg-white dark:hover:text-black" : "border-white/50 text-white hover:bg-white/20"}`}
+                  className={`px-6 py-2.5 border rounded-lg text-sm font-medium transition-all duration-300 ${useDarkText ? "border-gray-400 dark:border-white/30 text-gray-700 dark:text-white hover:bg-gray-800 hover:text-white dark:hover:bg-white dark:hover:text-black" : "border-white/50 text-white hover:bg-white/20"}`}
                   initial={{ opacity: 0, y: -20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4, duration: 0.4 }}
@@ -213,15 +229,15 @@ const Navbar = () => {
             >
               <div className="w-6 h-5 flex flex-col justify-between">
                 <span
-                  className={`w-full h-0.5 transition-all duration-300 ${scrolled ? "bg-gray-800 dark:bg-white" : "bg-white"} ${mobileMenuOpen ? "rotate-45 translate-y-2" : ""
+                  className={`w-full h-0.5 transition-all duration-300 ${useDarkText || mobileMenuOpen ? "bg-gray-800 dark:bg-white" : "bg-white"} ${mobileMenuOpen ? "rotate-45 translate-y-2" : ""
                     }`}
                 />
                 <span
-                  className={`w-full h-0.5 transition-all duration-300 ${scrolled ? "bg-gray-800 dark:bg-white" : "bg-white"} ${mobileMenuOpen ? "opacity-0" : ""
+                  className={`w-full h-0.5 transition-all duration-300 ${useDarkText || mobileMenuOpen ? "bg-gray-800 dark:bg-white" : "bg-white"} ${mobileMenuOpen ? "opacity-0" : ""
                     }`}
                 />
                 <span
-                  className={`w-full h-0.5 transition-all duration-300 ${scrolled ? "bg-gray-800 dark:bg-white" : "bg-white"} ${mobileMenuOpen ? "-rotate-45 -translate-y-2" : ""
+                  className={`w-full h-0.5 transition-all duration-300 ${useDarkText || mobileMenuOpen ? "bg-gray-800 dark:bg-white" : "bg-white"} ${mobileMenuOpen ? "-rotate-45 -translate-y-2" : ""
                     }`}
                 />
               </div>
@@ -295,7 +311,7 @@ const Navbar = () => {
             {isAuthenticated ? (
               <>
                 <Link
-                  to="/dashboard"
+                  to="/user/dashboard"
                   onClick={() => setMobileMenuOpen(false)}
                   className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-amber-600 dark:hover:text-amber-400 transition-colors py-2"
                 >
