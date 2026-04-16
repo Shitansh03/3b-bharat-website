@@ -59,16 +59,28 @@ const ScrollToHash = () => {
 
   useEffect(() => {
     if (location.hash) {
-      // Small delay to ensure the page has rendered
-      setTimeout(() => {
-        const element = document.querySelector(location.hash);
+      // Retry scrolling until the target element is in the DOM.
+      // Needed because hash targets (About, Enquiry) are lazy-loaded and
+      // may not exist yet when the location change fires.
+      const id = location.hash.replace("#", "");
+      let attempts = 0;
+      const maxAttempts = 20; // try for up to 2 seconds (20 × 100ms)
+
+      const tryScroll = () => {
+        const element = document.getElementById(id);
         if (element) {
-          element.scrollIntoView({ behavior: "smooth" });
+          element.scrollIntoView({ behavior: "smooth", block: "start" });
+        } else if (attempts < maxAttempts) {
+          attempts++;
+          setTimeout(tryScroll, 100);
         }
-      }, 100);
+      };
+
+      // Small initial delay to let React finish the current render
+      setTimeout(tryScroll, 50);
     } else {
       // Scroll to top on route change (no hash)
-      window.scrollTo(0, 0);
+      window.scrollTo({ top: 0, behavior: "instant" });
     }
   }, [location]);
 

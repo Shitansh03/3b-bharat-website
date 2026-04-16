@@ -85,7 +85,7 @@ const Hero = () => {
         */}
         <video
           ref={video1Ref}
-          src={blobUrls[backgroundVideos[0]] || ""}
+          src={blobUrls[backgroundVideos[0]] || null}
           autoPlay
           muted
           playsInline
@@ -110,7 +110,7 @@ const Hero = () => {
         */}
         <video
           ref={video2Ref}
-          src={blobUrls[backgroundVideos[1]] || ""}
+          src={blobUrls[backgroundVideos[1]] || null}
           muted
           playsInline
           preload="metadata"
