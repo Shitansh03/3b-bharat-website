@@ -15,7 +15,7 @@ const OfficialVideoSection = () => {
   const isInView = useInView(sectionRef, { once: true, margin: "-100px" });
   const progressInterval = useRef(null);
 
-  const videoId = "7ij2WXuIWGM";
+  const videoId = "PHZK4B0K6nk";
 
   // Load YouTube IFrame API
   /* 
