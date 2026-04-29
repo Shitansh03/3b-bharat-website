@@ -26,7 +26,7 @@ export const eduLoginUser = async (mobile_no, password, app_token = null) => {
     payload.app_token = app_token;
   }
 
-  return request("/user/edu-login", {
+  return request("/user/web-login", {
     method: "POST",
     body: JSON.stringify(payload),
   });
