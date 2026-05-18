@@ -7,6 +7,7 @@ import {
 } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
+import PromoPopup from "./components/PromoPopup";
 // Pre-lazy loading imports
 // import OfficialVideoSection from "./components/OfficialVideoSection";
 // import Challenges from "./components/Challenges";
@@ -91,6 +92,7 @@ const ScrollToHash = () => {
 const HomePage = () => {
   return (
     <>
+      <PromoPopup />
       <Hero />
       {/* 
         // Before lazy loading 
