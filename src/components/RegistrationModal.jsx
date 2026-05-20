@@ -54,16 +54,15 @@ const COUNTRY_CODES = [
   { code: "+234", country: "NG", label: "Nigeria (+234)" },
   { code: "+254", country: "KE", label: "Kenya (+254)" },
 ];
-
-// Category → download URL mapping
 const CATEGORY_DOWNLOADS = {
   road: {
     label: "Road Design",
-    filename: "/3D%20Bharat%20Road%20Application_v1.0.1.exe",
+    filename: "3d%20Bharat%20Road%20Application%20v_1.0.2/3D%20Bharat%20Road%20Application_v1.0.2.exe",
   },
   bridge: {
     label: "Bridge Design",
-    filename: "",
+    // Note: Kept "Nridge" from your provided link. If it's a typo on the server, you might need to change it to "Bridge".
+    filename: "3D%20Bharat%20Bridge%20Application_v1.0.2/3D%20Bharat%20Nridge%20Application_v1.0.2.exe",
   },
   railway: {
     label: "Railway and Metro",
