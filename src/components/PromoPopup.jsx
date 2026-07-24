@@ -74,7 +74,7 @@ const PromoPopup = () => {
 
     const closeTimer = setTimeout(() => {
       setShowClose(true);
-    }, 10000);
+    }, 100);
 
     return () => clearTimeout(closeTimer);
   }, [isOpen]);

@@ -30,6 +30,7 @@ import {
   getUserPurchasesAll,
   getAvailableFiles,
 } from "../services/purchaseService";
+import { useRegistrationModal } from "../context/RegistrationModalContext";
 
 /* ─── Category config ─── */
 const CATEGORY_META = {
@@ -43,6 +44,20 @@ const TABS = [
   { id: "purchases", label: "My Purchases", icon: ShoppingBag },
   { id: "available", label: "Available Files", icon: Package },
 ];
+
+const DOWNLOAD_BASE_URL = "https://edu.3dbharat.com/downloads/application";
+const APP_DOWNLOADS = {
+  road: {
+    title: "Road Application",
+    filename: "road/3D%20Bharat%20Road%20Application_v1.0.3.exe",
+    icon: ShoppingBag, // Or any suitable icon
+  },
+  bridge: {
+    title: "Bridge Application",
+    filename: "bridge/3D%20Bharat%20Bridge%20Application_v1.0.3.exe",
+    icon: ShoppingBag,
+  }
+};
 
 /* ─── Helpers ─── */
 const mapCategory = (name) => {
@@ -519,6 +534,7 @@ const EmptyState = ({ icon: Icon, title, description, actionLabel, onAction }) =
 const PurchaseDashboard = () => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const { openModal } = useRegistrationModal();
 
   const [activeTab, setActiveTab] = useState("purchases");
   const [isLoading, setIsLoading] = useState(true);
@@ -785,6 +801,26 @@ const PurchaseDashboard = () => {
   const unpurchasedFiles = availableFiles.filter((f) => f.purchased !== true && f.purchased !== 1 && f.purchased !== "1");
   const purchasedFiles = availableFiles.filter((f) => f.purchased === true || f.purchased === 1 || f.purchased === "1");
 
+  // If user is logged in, they are considered registered for all trial apps
+  const hasRoadApp = true;
+  const hasBridgeApp = true;
+
+  const handleAppClick = (appType) => {
+    if (appType === "road") {
+      if (hasRoadApp) {
+        window.open(`${DOWNLOAD_BASE_URL}/${APP_DOWNLOADS.road.filename}`, "_blank");
+      } else {
+        openModal("road");
+      }
+    } else if (appType === "bridge") {
+      if (hasBridgeApp) {
+        window.open(`${DOWNLOAD_BASE_URL}/${APP_DOWNLOADS.bridge.filename}`, "_blank");
+      } else {
+        openModal("bridge");
+      }
+    }
+  };
+
   if (!isAuthenticated) return null;
 
   return (
@@ -899,6 +935,80 @@ const PurchaseDashboard = () => {
 
         {/* Content */}
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+
+          {/* Applications Download Section */}
+          {!isLoading && (
+            <div className="mb-8 p-6 rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 shadow-sm">
+              <h2 className="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
+                <Smartphone className="w-5 h-5 text-amber-500" />
+                Desktop Applications
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Road App */}
+                <div className="flex items-center justify-between p-4 rounded-xl border border-amber-200 dark:border-amber-500/30 bg-amber-50/50 dark:bg-amber-500/5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-500/20 flex items-center justify-center">
+                      <Layers className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-gray-800 dark:text-white">Road Application</h3>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {hasRoadApp ? "You are registered for Road." : "Not registered for Road."}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleAppClick("road")}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${hasRoadApp
+                      ? "bg-green-500 hover:bg-green-600 text-white shadow-md shadow-green-500/20"
+                      : "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-md shadow-amber-500/20"
+                      }`}
+                  >
+                    {hasRoadApp ? (
+                      <>
+                        <Download className="w-4 h-4" />
+                        Download
+                      </>
+                    ) : (
+                      "Download"
+                    )}
+                  </button>
+                </div>
+
+                {/* Bridge App */}
+                <div className="flex items-center justify-between p-4 rounded-xl border border-blue-200 dark:border-blue-500/30 bg-blue-50/50 dark:bg-blue-500/5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center">
+                      <Layers className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-gray-800 dark:text-white">Bridge Application</h3>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {hasBridgeApp ? "You are registered for Bridge." : "Not registered for Bridge."}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleAppClick("bridge")}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${hasBridgeApp
+                      ? "bg-green-500 hover:bg-green-600 text-white shadow-md shadow-green-500/20"
+                      : "bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white shadow-md shadow-blue-500/20"
+                      }`}
+                  >
+                    {hasBridgeApp ? (
+                      <>
+                        <Download className="w-4 h-4" />
+                        Download
+                      </>
+                    ) : (
+                      "Download"
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* ── SHARED FILES BANNER (only when arrived via edu-login URL) ── */}
           {linkedFiles.length > 0 && (
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 mb-2">

@@ -57,12 +57,11 @@ const COUNTRY_CODES = [
 const CATEGORY_DOWNLOADS = {
   road: {
     label: "Road Design",
-    filename: "3d%20Bharat%20Road%20Application%20v_1.0.2/3D%20Bharat%20Road%20Application_v1.0.2.exe",
+    filename: "road/3D%20Bharat%20Road%20Application_v1.0.3.exe",
   },
   bridge: {
     label: "Bridge Design",
-    // Note: Kept "Nridge" from your provided link. If it's a typo on the server, you might need to change it to "Bridge".
-    filename: "3D%20Bharat%20Bridge%20Application_v1.0.2/3D%20Bharat%20Nridge%20Application_v1.0.2.exe",
+    filename: "bridge/3D%20Bharat%20Bridge%20Application_v1.0.3.exe",
   },
   railway: {
     label: "Railway and Metro",
@@ -325,9 +324,9 @@ const RegistrationModal = ({ isOpen, onClose, inline = false, forcedCategory = n
     };
   }, [isOpen, inline]);
 
-  // Reset on close
+  // Reset on close or category change
   useEffect(() => {
-    if (!isOpen && !inline) {
+    if ((!isOpen && !inline) || selectedCategory) {
       setTimeout(() => {
         setStep(1);
         setDirection(1);
@@ -361,7 +360,7 @@ const RegistrationModal = ({ isOpen, onClose, inline = false, forcedCategory = n
         setErrors({});
       }, 300);
     }
-  }, [isOpen]);
+  }, [isOpen, selectedCategory]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -1527,7 +1526,7 @@ const RegistrationModal = ({ isOpen, onClose, inline = false, forcedCategory = n
                       {/* Download Software Button */}
                       {selectedCategory && CATEGORY_DOWNLOADS[selectedCategory] && (() => {
                         const catInfo = CATEGORY_DOWNLOADS[selectedCategory];
-                        const downloadUrl = `${DOWNLOAD_BASE_URL}/${selectedCategory}/${catInfo.filename}`;
+                        const downloadUrl = `${DOWNLOAD_BASE_URL}/${catInfo.filename}`;
                         return (
                           <motion.a
                             href={downloadUrl}
