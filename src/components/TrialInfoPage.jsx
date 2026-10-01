@@ -317,7 +317,7 @@ const TrialInfoPage = () => {
                 3D Bharat <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 via-orange-500 to-red-500">Career Track</span>
               </h1>
               <p className="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-100/60 dark:bg-amber-900/40 border border-amber-500/50 text-base md:text-lg font-black text-amber-800 dark:text-amber-300 tracking-wide shadow-md shadow-amber-500/10 transition-all hover:shadow-lg hover:bg-amber-100/80 dark:hover:bg-amber-900/60">
-                Start your journey from student <span className="text-amber-600 dark:text-amber-400 mx-1 flex items-center animate-bounce">→</span> professional
+                Start your journey from Trainee <span className="text-amber-600 dark:text-amber-400 mx-1 flex items-center animate-bounce">→</span> professional
               </p>
             </motion.div>
 
@@ -464,9 +464,9 @@ const TrialInfoPage = () => {
               className="bg-white/60 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl p-6 shadow-md shadow-black/5 hover:border-amber-300 dark:hover:border-amber-500/40 hover:-translate-y-0.5 transition-all duration-300 relative overflow-hidden group"
             >
               <motion.div variants={verticalLineVariant} className="absolute left-0 top-0 w-1 bg-gradient-to-b from-blue-400 to-indigo-500 group-hover:w-1.5 transition-all duration-300 origin-top" />
-              <h3 className="text-lg font-bold mb-1.5 text-gray-900 dark:text-white">Why Students Choose 3D Bharat?</h3>
+              <h3 className="text-lg font-bold mb-1.5 text-gray-900 dark:text-white">Why Trainees Choose 3D Bharat?</h3>
               <p className="text-base text-transparent bg-clip-text bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400 font-bold mb-1.5">Learn by doing — not just by studying.</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-5 font-medium">Students choose 3D Bharat to gain real, practical experience that prepares them for the industry.</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-5 font-medium">Trainees choose 3D Bharat to gain real, practical experience that prepares them for the industry.</p>
               <motion.div variants={staggerList} initial="hidden" whileInView="show" viewport={{ once: true }} className="space-y-3">
                 {getWhyChooseData(category).map((item, i) => (
                   <motion.div
@@ -547,17 +547,17 @@ const TrialInfoPage = () => {
               className="bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-950/30 dark:to-rose-900/10 border border-red-200 dark:border-red-500/20 rounded-2xl p-6 md:p-8 shadow-md hover:shadow-lg transition-all duration-300"
             >
               <div className="text-center mb-6">
-                <h3 className="text-2xl font-bold mb-2 text-red-900 dark:text-red-400">What Problems Students Face Today?</h3>
-                <p className="text-base text-gray-600 dark:text-gray-400 font-medium">Most students struggle because of:</p>
+                <h3 className="text-2xl font-bold mb-2 text-red-900 dark:text-red-400">What Problems Trainees Face Today?</h3>
+                <p className="text-base text-gray-600 dark:text-gray-400 font-medium">Most trainees struggle because of:</p>
               </div>
               <motion.div variants={staggerList} initial="hidden" whileInView="show" viewport={{ once: true }} className="flex flex-wrap justify-center gap-3">
                 {[
                   "No real project experience",
                   "No site-level understanding",
                   "No hands-on practice with tools",
-                  "Why do students struggle to get jobs even after completing their degree?",
-                  "Why do students feel underconfident during interviews?",
-                  "Why are students not ready to work on real construction/site projects from Day 1?"
+                  "Why do trainees struggle to get jobs even after completing their degree?",
+                  "Why do trainees feel underconfident during interviews?",
+                  "Why are trainees not ready to work on real construction/site projects from Day 1?"
                 ].map((item, i) => (
                   <motion.div
                     key={i}
@@ -575,7 +575,7 @@ const TrialInfoPage = () => {
               <div className="mt-8 pt-5 relative text-center">
                 <motion.div variants={horizontalLineVariant} initial="hidden" whileInView="show" viewport={{ once: true }} className="absolute top-0 left-0 right-0 h-[1px] bg-red-200 dark:bg-red-500/20" />
                 <p className="text-gray-700 dark:text-gray-300 font-bold italic text-base mt-3">
-                  "That's why students feel unprepared for real jobs."
+                  "That's why Trainees feel unprepared for real jobs."
                 </p>
               </div>
             </motion.div>

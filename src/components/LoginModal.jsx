@@ -166,12 +166,12 @@ const LoginModal = () => {
       const savedToken = getSavedAppToken();
       const response = await eduLoginUser(mobileNo.trim(), password, savedToken);
 
-      // Extract data from response
-      const data = response?.data || response;
-      setLoginData(data);
+      // Extract data from response (handles { data: { token, user, ... } } or { token, user, ... })
+      const resultData = response?.data?.data || response?.data || response;
+      setLoginData(resultData);
 
-      // Save auth state
-      login(data.user, data.token);
+      // Save auth state (stores token, user, multi-profile IDs, active_module in localStorage and context)
+      login(resultData.user, resultData.token, resultData);
       setLoginSuccess(true);
 
       // Auto-close after brief success animation

@@ -119,7 +119,7 @@ const MeasurementHeader = () => {
         {/* Subtitle */}
         <motion.p variants={itemVariants} className="text-lg md:text-xl text-gray-300 dark:text-gray-200 max-w-2xl mx-auto leading-relaxed mb-10 font-medium">
           Advanced 3D measurement capabilities delivering 
-          <span className="text-white dark:text-white font-semibold underline decoration-gray-400/50 underline-offset-4"> sub-millimeter precision </span> 
+          <span className="text-white dark:text-white font-semibold underline decoration-gray-400/50 underline-offset-4"> precision Measurement </span> 
           for Railway, Bridge, and Road infrastructure analysis.
         </motion.p>
 

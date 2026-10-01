@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import useVideoWorker from "../../hooks/useVideoWorker";
 import {
@@ -22,6 +22,10 @@ import VideosHeader from "./VideosHeader";
 
 const Videos = () => {
   const [activeCategory, setActiveCategory] = useState("all");
+
+  useEffect(() => {
+    document.title = "3D Bharat - At a Glance";
+  }, []);
 
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -87,9 +91,56 @@ const Videos = () => {
   };
 
   // Video data organized by categories
-  // Sequence: Railway (2D then 3D) → Bridge → Road → Design → Material → Merger
+  // Sequence: Featured New Videos (Metro, Bridge, Tunnel, Road) → Railway → Remaining Bridge & Road → Design → Material → Merger
   const videos = [
-    // Railway 3D Videos
+    // ── FEATURED NEW VIDEOS (TOP) ──
+    {
+      id: 24,
+      category: "metro",
+      title: "Metro Bridge Video",
+      description:
+        "3D visualization and measurement analysis of metro bridge infrastructure, structural dimensions, and span details",
+      url: "/videos/metro-video.mp4",
+      duration: "0:44",
+    },
+    {
+      id: 22,
+      category: "bridge",
+      title: "Bridge Inspection & Mapping",
+      description:
+        "Comprehensive bridge inspection and 3D measurement workflow — span, pillar, and deck analysis with point-cloud based mapping.",
+      url: "/videos/bridge-video.mp4",
+      duration: "0:35",
+    },
+    {
+      id: 25,
+      category: "tunnel",
+      title: "Tunnel Section - 3D Measurements",
+      description:
+        "3D tunnel infrastructure analysis, cross-section clearance measurements, and structural defect monitoring",
+      url: "/videos/tunnel-video.mp4",
+      duration: "0:41",
+    },
+    {
+      id: 23,
+      category: "road",
+      title: "Road Section - 3D Measurements",
+      description:
+        "Road infrastructure measurement and asset mapping with precision clearance and surface monitoring.",
+      url: "/videos/road-video.mp4",
+      duration: "0:14",
+    },
+    {
+      id: 7,
+      category: "bridge",
+      title: "Bridge Section - Full Measurements",
+      description:
+        "Height, width, length, span, and pillar dimension measurements",
+      url: "https://3dbharat.com/storage/videos/bridge_section-height,width,length,span,pillar_dimension.mp4",
+      duration: "5:40",
+    },
+
+    // ── RAILWAY 3D VIDEOS ──
     {
       id: 4,
       category: "railway",
@@ -150,26 +201,8 @@ const Videos = () => {
       url: "https://3dbharat.com/storage/videos/track_section-interchenging_points_angle_of_defect.mp4",
       duration: "4:45",
     },
-    // Bridge Videos
-    {
-      id: 7,
-      category: "bridge",
-      title: "Bridge Section - Full Measurements",
-      description:
-        "Height, width, length, span, and pillar dimension measurements",
-      url: "https://3dbharat.com/storage/videos/bridge_section-height,width,length,span,pillar_dimension.mp4",
-      duration: "5:40",
-    },
-    {
-      id: 22,
-      category: "bridge",
-      title: "Bridge Inspection & Mapping",
-      description:
-        "Comprehensive bridge inspection and 3D measurement workflow — span, piller, and deck analysis with point-cloud based mapping.",
-      url: "https://3dbharat.miscos.in/storage/videos/Bridge_Video.mp4",
-      duration: "4:20",
-    },
-    // Road Videos
+
+    // ── ROAD & TOLL VIDEOS ──
     {
       id: 8,
       category: "road",
@@ -180,15 +213,6 @@ const Videos = () => {
       duration: "4:50",
     },
     {
-      id: 23,
-      category: "road",
-      title: "Road Asset Mapping",
-      description:
-        "Asset mapping for road infrastructure — signage, markings and asset mapping street light signal pole on lane.",
-      url: "https://3dbharat.miscos.in/storage/videos/Asset_Mapping_Video.mp4",
-      duration: "3:50",
-    },
-    {
       id: 9,
       category: "road",
       title: "Tollbooth Section",
@@ -197,37 +221,6 @@ const Videos = () => {
       url: "https://3dbharat.com/storage/videos/tollbooth_section.mp4",
       duration: "3:25",
     },
-    // Design Videos
-    {
-      id: 1,
-      category: "design",
-      title: "Road Construction Design",
-      description:
-        "Complete 3D visualization of road construction design process and layer planning",
-      url: "https://3dbharat.com/storage/videos/road_construction_design.mp4",
-      duration: "3:45",
-    },
-    // Material Videos
-    {
-      id: 2,
-      category: "material",
-      title: "Road Construction Material Filling",
-      description:
-        "Detailed analysis of material filling layers and volume calculations",
-      url: "https://3dbharat.com/storage/videos/road_construction_material_filling.mp4",
-      duration: "4:20",
-    },
-    // Merger Videos
-    {
-      id: 3,
-      category: "merger",
-      title: "Merger Layer Visualization",
-      description:
-        "Multi-layer merging and integration for unified 3D infrastructure view",
-      url: "https://3dbharat.com/storage/videos/merger_layer.mp4",
-      duration: "2:55",
-    },
-    // Tracking Videos
     {
       id: 21,
       category: "road",
@@ -237,15 +230,34 @@ const Videos = () => {
       url: "https://3dbharat.com/storage/videos/Roller_Simulation_Tracking.mp4",
       duration: "3:00",
     },
-    // Metro Videos
+
+    // ── DESIGN, MATERIAL & MERGER VIDEOS ──
     {
-      id: 24,
-      category: "metro",
-      title: "Metro Bridge Video",
+      id: 1,
+      category: "design",
+      title: "Road Construction Design",
       description:
-        "3D visualization and measurement analysis of metro bridge infrastructure, structural dimensions, and span details",
-      url: "https://3dbharat.miscos.in/storage/videos/Metro_Bridge_Video_2.mp4",
-      duration: "4:00",
+        "Complete 3D visualization of road construction design process and layer planning",
+      url: "https://3dbharat.com/storage/videos/road_construction_design.mp4",
+      duration: "3:45",
+    },
+    {
+      id: 2,
+      category: "material",
+      title: "Road Construction Material Filling",
+      description:
+        "Detailed analysis of material filling layers and volume calculations",
+      url: "https://3dbharat.com/storage/videos/road_construction_material_filling.mp4",
+      duration: "4:20",
+    },
+    {
+      id: 3,
+      category: "merger",
+      title: "Merger Layer Visualization",
+      description:
+        "Multi-layer merging and integration for unified 3D infrastructure view",
+      url: "https://3dbharat.com/storage/videos/merger_layer.mp4",
+      duration: "2:55",
     },
   ];
 
@@ -258,11 +270,11 @@ const Videos = () => {
       color: "from-gray-500 to-gray-600",
     },
     {
-      id: "railway",
-      label: "Railway",
-      icon: Train,
-      count: videos.filter((v) => v.category === "railway").length,
-      color: "from-cyan-500 to-sky-500",
+      id: "metro",
+      label: "Metro",
+      icon: Navigation,
+      count: videos.filter((v) => v.category === "metro").length,
+      color: "from-[#FFED00] to-[#FF0000]",
     },
     {
       id: "bridge",
@@ -272,11 +284,25 @@ const Videos = () => {
       color: "from-violet-500 to-purple-500",
     },
     {
+      id: "tunnel",
+      label: "Tunnel",
+      icon: Route,
+      count: videos.filter((v) => v.category === "tunnel").length,
+      color: "from-emerald-500 to-teal-500",
+    },
+    {
       id: "road",
       label: "Road",
       icon: Route,
       count: videos.filter((v) => v.category === "road").length,
       color: "from-lime-500 to-green-500",
+    },
+    {
+      id: "railway",
+      label: "Railway",
+      icon: Train,
+      count: videos.filter((v) => v.category === "railway").length,
+      color: "from-cyan-500 to-sky-500",
     },
     {
       id: "design",
@@ -298,13 +324,6 @@ const Videos = () => {
       icon: Layers,
       count: videos.filter((v) => v.category === "merger").length,
       color: "from-emerald-500 to-teal-500",
-    },
-    {
-      id: "metro",
-      label: "Metro",
-      icon: Navigation,
-      count: videos.filter((v) => v.category === "metro").length,
-      color: "from-[#FFED00] to-[#FF0000]",
     },
   ];
 

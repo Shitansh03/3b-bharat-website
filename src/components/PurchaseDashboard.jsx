@@ -49,12 +49,12 @@ const DOWNLOAD_BASE_URL = "https://edu.3dbharat.com/downloads/application";
 const APP_DOWNLOADS = {
   road: {
     title: "Road Application",
-    filename: "road/3D%20Bharat%20Road%20Application_v1.0.3.exe",
+    filename: "road/3D%20Bharat%20Road%20Design%20Application_v1.0.4.exe",
     icon: ShoppingBag, // Or any suitable icon
   },
   bridge: {
     title: "Bridge Application",
-    filename: "bridge/3D%20Bharat%20Bridge%20Application_v1.0.3.exe",
+    filename: "bridge/3D%20Bharat%20Bridge%20Design%20Application_v1.0.4.exe",
     icon: ShoppingBag,
   }
 };

@@ -44,6 +44,7 @@ export default defineConfig({
   },
   // Optimize dev server
   server: {
+    host: true,
     hmr: {
       overlay: true,
     },

@@ -10,6 +10,7 @@ import {
   Train,
   Building2,
   Route,
+  Navigation,
 } from "lucide-react";
 
 const VideosHeader = () => {
@@ -103,10 +104,10 @@ const VideosHeader = () => {
             <span className="relative block w-3.5 h-3.5 rounded-full bg-white" />
           </motion.div>
           <span className="text-sm font-medium text-gray-200 uppercase tracking-widest">
-            Video Gallery
+            At a Glance
           </span>
           <div className="w-px h-4 bg-white/30" />
-          <span className="text-xs font-medium text-gray-400">9 Videos • 6 Categories</span>
+          <span className="text-xs font-medium text-gray-400">17 Videos • 8 Categories</span>
         </motion.div>
 
         {/* Main Title with Animated Highlight */}
@@ -122,25 +123,27 @@ const VideosHeader = () => {
             />
           </span>
           <br />
-          <span className="text-gray-300 drop-shadow-[0_1px_2px_rgba(255,255,255,0.3)] dark:drop-shadow-none">Video Showcase</span>
+          <span className="text-gray-300 drop-shadow-[0_1px_2px_rgba(255,255,255,0.3)] dark:drop-shadow-none">At a Glance</span>
         </motion.h2>
 
         {/* Subtitle */}
         <motion.p variants={itemVariants} className="text-lg md:text-xl text-gray-300 max-w-2xl mx-auto leading-relaxed mb-10 font-medium">
           Explore detailed video demonstrations of 
           <span className="text-white font-semibold underline decoration-gray-400/50 underline-offset-4"> 3D analysis </span> 
-          showcasing Design, Material, Merger Layer, and complete infrastructure workflows.
+          showcasing Metro, Bridge, Tunnel, Road, Railway, and complete infrastructure workflows.
         </motion.p>
 
         {/* Category Preview Tags */}
         <motion.div variants={itemVariants} className="flex flex-wrap items-center justify-center gap-3 max-w-3xl mx-auto">
           {[
-            { name: "Design", icon: Palette },
-            { name: "Material", icon: Hammer },
-            { name: "Merger Layer", icon: Layers },
             { name: "Railway", icon: Train },
             { name: "Bridge", icon: Building2 },
             { name: "Road", icon: Route },
+            { name: "Tunnel", icon: Route },
+            { name: "Metro", icon: Navigation },
+            { name: "Design", icon: Palette },
+            { name: "Material", icon: Hammer },
+            { name: "Merger Layer", icon: Layers },
           ].map((cat, index) => (
             <motion.div
               key={cat.name}

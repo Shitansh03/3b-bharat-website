@@ -57,11 +57,11 @@ const COUNTRY_CODES = [
 const CATEGORY_DOWNLOADS = {
   road: {
     label: "Road Design",
-    filename: "road/3D%20Bharat%20Road%20Application_v1.0.3.exe",
+    filename: "road/3D%20Bharat%20Road%20Design%20Application_v1.0.4.exe",
   },
   bridge: {
     label: "Bridge Design",
-    filename: "bridge/3D%20Bharat%20Bridge%20Application_v1.0.3.exe",
+    filename: "bridge/3D%20Bharat%20Bridge%20Design%20Application_v1.0.4.exe",
   },
   railway: {
     label: "Railway and Metro",

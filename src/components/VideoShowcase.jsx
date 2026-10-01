@@ -10,76 +10,38 @@ import { Link } from "react-router-dom";
 // Showcase videos from Videos component
 const showcaseVideos = [
   {
-    id: 4,
-    category: "railway",
-    title: "Track Section - Interchange Points",
-    url: "https://3dbharat.com/storage/videos/track_section-intercheniging_point_&_cant_angle.mp4",
-  },
-  {
-    id: 5,
-    category: "railway",
-    title: "Electrical Section - OHE Measurements",
-    url: "https://3dbharat.com/storage/videos/railway_section-ohe_pole_&_wire_measurements.mp4",
-  },
-  {
-    id: 6,
-    category: "railway",
-    title: "Station & Footover Bridge",
-    url: "https://3dbharat.com/storage/videos/construction_&_infrastructure_section-platform_measurement.mp4",
-  },
-  {
-    id: 7,
-    category: "bridge",
-    title: "Bridge Section - Full Measurements",
-    url: "https://3dbharat.com/storage/videos/bridge_section-height,width,length,span,pillar_dimension.mp4",
-  },
-  {
-    id: 8,
-    category: "road",
-    title: "Road Section - Defect Analysis",
-    url: "https://3dbharat.com/storage/videos/road_section-potholes,road_height,width.mp4",
-  },
-  {
-    id: 9,
-    category: "road",
-    title: "Tollbooth Section",
-    url: "https://3dbharat.com/storage/videos/tollbooth_section.mp4",
-  },
-  {
     id: 1,
-    category: "design",
-    title: "Road Construction Design",
-    url: "https://3dbharat.com/storage/videos/road_construction_design.mp4",
+    category: "metro",
+    title: "Metro Infrastructure 3D Video",
+    url: "/videos/metro-video.mp4",
   },
   {
     id: 2,
-    category: "material",
-    title: "Road Construction Material Filling",
-    url: "https://3dbharat.com/storage/videos/road_construction_material_filling.mp4",
+    category: "bridge",
+    title: "Bridge Section 3D Video",
+    url: "/videos/bridge-video.mp4",
   },
   {
     id: 3,
-    category: "merger",
-    title: "Merger Layer Visualization",
-    url: "https://3dbharat.com/storage/videos/merger_layer.mp4",
+    category: "tunnel",
+    title: "Tunnel Section 3D Video",
+    url: "/videos/tunnel-video.mp4",
   },
   {
-    id: 21,
+    id: 4,
     category: "road",
-    title: "Rolling GPS Tracking System",
-    url: "https://3dbharat.com/storage/videos/Roller_Simulation_Tracking.mp4",
+    title: "Road Section 3D Video",
+    url: "/videos/road-video.mp4",
   },
 ];
 
 // Category color mapping
 const getCategoryColor = (category) => {
   const colors = {
-    railway: "from-cyan-500 to-sky-500",
+    metro: "from-amber-500 to-red-500",
     bridge: "from-violet-500 to-purple-500",
+    tunnel: "from-emerald-500 to-teal-500",
     road: "from-lime-500 to-green-500",
-    design: "from-pink-500 to-rose-500",
-    material: "from-amber-500 to-orange-500",
-    merger: "from-emerald-500 to-teal-500",
   };
   return colors[category] || "from-gray-500 to-gray-600";
 };
@@ -222,7 +184,7 @@ const VideoShowcase = () => {
               </span>
             </div>
             
-            <Link to="/videos">
+            <Link to="/at-a-glance">
               <motion.div
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}

@@ -35,7 +35,10 @@ const Navbar = () => {
   const isLightBgPage =
     location.pathname.startsWith("/user/dashboard") ||
     location.pathname.startsWith("/trial-info") ||
-    location.pathname.startsWith("/modules/");
+    location.pathname.startsWith("/modules/") ||
+    location.pathname.startsWith("/methodology") ||
+    location.pathname.startsWith("/our-approach") ||
+    location.pathname.startsWith("/visualization");
   const useDarkText = scrolled || isLightBgPage;
 
   useEffect(() => {
@@ -73,21 +76,31 @@ const Navbar = () => {
 
   const navItems = [
     { name: "Home", href: "/", hash: null },
+    { name: "Our Approach", href: "/our-approach", hash: null },
     { name: "Measurements", href: "/measurement", hash: null },
-    { name: "Videos", href: "/videos", hash: null },
-    { name: "About", href: "/#about", hash: "about" },
-    { name: "Contact", href: "/#enquiry", hash: "enquiry" },
+    { name: "At a Glance", href: "/at-a-glance", hash: null },
+    {
+      name: isAuthenticated ? "Visualize Now" : "Visualization",
+      href: isAuthenticated ? "/visualize" : "/visualization",
+      hash: null,
+    },
   ];
+
+  const isMethodologyPage =
+    location.pathname.startsWith("/methodology") ||
+    location.pathname.startsWith("/our-approach") ||
+    location.pathname.startsWith("/visualization");
 
   return (
     <motion.nav
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 border-b ${scrolled || mobileMenuOpen
-        ? "bg-stone-100/90 dark:bg-black/90 backdrop-blur-xl border-gray-300 dark:border-white/10"
-        : "bg-transparent border-transparent"
-        }`}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 border-b ${
+        scrolled || mobileMenuOpen || isMethodologyPage
+          ? "bg-stone-100/90 dark:bg-black/90 backdrop-blur-xl border-gray-300 dark:border-white/10"
+          : "bg-transparent border-transparent"
+      }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
@@ -117,27 +130,50 @@ const Navbar = () => {
           </motion.a>
 
           {/* Desktop Menu */}
-          <div className="hidden md:flex items-center space-x-8">
-            {navItems.map((item, index) => (
-              <motion.a
-                key={item.name}
-                href={item.href}
-                onClick={item.hash ? (e) => handleHashNavigation(e, item.hash) : undefined}
-                className={`text-sm font-medium transition-colors duration-300 tracking-wide cursor-pointer ${useDarkText ? "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white" : "text-white/90 hover:text-white"}`}
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1, duration: 0.4 }}
-                whileHover={{ y: -2 }}
-              >
-                {item.name}
-              </motion.a>
-            ))}
+          <div className="hidden md:flex items-center space-x-4 lg:space-x-6 xl:space-x-8">
+            {navItems.map((item, index) => {
+              const isActive =
+                location.pathname === item.href ||
+                (item.name === "Our Approach" &&
+                  (location.pathname === "/methodology" ||
+                    location.pathname === "/our-approach"));
+              return (
+                <motion.a
+                  key={item.name}
+                  href={item.href}
+                  onClick={(e) => {
+                    if (item.hash) {
+                      handleHashNavigation(e, item.hash);
+                    } else if (item.href === "/visualize") {
+                      e.preventDefault();
+                      window.location.href = "/visualize";
+                    } else if (item.href.startsWith("/")) {
+                      e.preventDefault();
+                      navigate(item.href);
+                    }
+                  }}
+                  className={`text-sm font-medium transition-colors duration-300 tracking-wide cursor-pointer whitespace-nowrap ${
+                    isActive
+                      ? "text-amber-500 font-semibold"
+                      : useDarkText
+                      ? "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+                      : "text-white/90 hover:text-white"
+                  }`}
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1, duration: 0.4 }}
+                  whileHover={{ y: -2 }}
+                >
+                  {item.name}
+                </motion.a>
+              );
+            })}
 
             {/* Trials Dropdown */}
             <div className="relative" ref={trialsRef}>
               <motion.button
                 onClick={() => setTrialsOpen((prev) => !prev)}
-                className={`flex items-center gap-1 text-sm font-medium transition-colors duration-300 tracking-wide ${useDarkText ? "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white" : "text-white/90 hover:text-white"}`}
+                className={`flex items-center gap-1 text-sm font-medium transition-colors duration-300 tracking-wide whitespace-nowrap ${useDarkText ? "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white" : "text-white/90 hover:text-white"}`}
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: navItems.length * 0.1, duration: 0.4 }}
@@ -268,19 +304,38 @@ const Navbar = () => {
           className="md:hidden overflow-hidden"
         >
           <div className="py-4 space-y-4">
-            {navItems.map((item) => (
-              <a
-                key={item.name}
-                href={item.href}
-                className="block text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors py-2"
-                onClick={(e) => {
-                  setMobileMenuOpen(false);
-                  if (item.hash) handleHashNavigation(e, item.hash);
-                }}
-              >
-                {item.name}
-              </a>
-            ))}
+            {navItems.map((item) => {
+              const isActive =
+                location.pathname === item.href ||
+                (item.name === "Our Approach" &&
+                  (location.pathname === "/methodology" ||
+                    location.pathname === "/our-approach"));
+              return (
+                <a
+                  key={item.name}
+                  href={item.href}
+                  className={`block transition-colors py-2 ${
+                    isActive
+                      ? "text-amber-500 font-semibold"
+                      : "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+                  }`}
+                  onClick={(e) => {
+                    setMobileMenuOpen(false);
+                    if (item.hash) {
+                      handleHashNavigation(e, item.hash);
+                    } else if (item.href === "/visualize") {
+                      e.preventDefault();
+                      window.location.href = "/visualize";
+                    } else if (item.href.startsWith("/")) {
+                      e.preventDefault();
+                      navigate(item.href);
+                    }
+                  }}
+                >
+                  {item.name}
+                </a>
+              );
+            })}
 
             {/* Mobile Trials Dropdown */}
             <div>

@@ -7,7 +7,7 @@ import {
 } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
-import PromoPopup from "./components/PromoPopup";
+
 // Pre-lazy loading imports
 // import OfficialVideoSection from "./components/OfficialVideoSection";
 // import Challenges from "./components/Challenges";
@@ -46,6 +46,8 @@ const Videos = lazy(() => import("./components/videos/Videos"));
 const PaymentGateway = lazy(() => import("./components/payment/PaymentGateway"));
 const PurchaseDashboard = lazy(() => import("./components/PurchaseDashboard"));
 const EduLoginPage = lazy(() => import("./components/EduLoginPage"));
+const Methodology = lazy(() => import("./components/Methodology"));
+const VisualizationPage = lazy(() => import("./components/VisualizationPage"));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -92,7 +94,7 @@ const ScrollToHash = () => {
 const HomePage = () => {
   return (
     <>
-      <PromoPopup />
+    
       <Hero />
       {/* 
         // Before lazy loading 
@@ -121,6 +123,11 @@ const AppContent = () => {
   const { isOpen: isLoginOpen, closeModal: closeLoginModal } = useLoginModal();
   const location = useLocation();
   const isHome = location.pathname === "/";
+  const hideFooter =
+    location.pathname.startsWith("/methodology") ||
+    location.pathname.startsWith("/our-approach") ||
+    location.pathname.startsWith("/visualization") ||
+    location.pathname.startsWith("/visualize");
 
   return (
     <>
@@ -132,6 +139,22 @@ const AppContent = () => {
         <main id="main-content" >
           <Routes>
             <Route path="/" element={<HomePage />} />
+            <Route
+              path="/methodology"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <Methodology />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/our-approach"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <Methodology />
+                </Suspense>
+              }
+            />
             <Route
               path="/trial-info"
               element={
@@ -145,6 +168,14 @@ const AppContent = () => {
               element={
                 <Suspense fallback={<PageLoader />}>
                   <Measurement />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/at-a-glance"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <Videos />
                 </Suspense>
               }
             />
@@ -204,6 +235,22 @@ const AppContent = () => {
                 </Suspense>
               }
             />
+            <Route
+              path="/visualization"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <VisualizationPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/visualize"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <VisualizationPage />
+                </Suspense>
+              }
+            />
             {/* Fallback route for 404 Not Found */}
             <Route path="*" element={<NotFound />} />
           </Routes>
@@ -211,8 +258,7 @@ const AppContent = () => {
         </main>
 
         {/* Shared Footer */}
-
-        <Footer />
+        {!hideFooter && <Footer />}
       </div>
       {/* Registration Modal */}
       <RegistrationModal isOpen={isOpen} onClose={closeModal} />
