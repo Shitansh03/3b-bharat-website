@@ -38,7 +38,8 @@ const Navbar = () => {
     location.pathname.startsWith("/modules/") ||
     location.pathname.startsWith("/methodology") ||
     location.pathname.startsWith("/our-approach") ||
-    location.pathname.startsWith("/visualization");
+    location.pathname.startsWith("/visualization") ||
+    location.pathname.startsWith("/openings");
   const useDarkText = scrolled || isLightBgPage;
 
   useEffect(() => {
@@ -89,18 +90,18 @@ const Navbar = () => {
   const isMethodologyPage =
     location.pathname.startsWith("/methodology") ||
     location.pathname.startsWith("/our-approach") ||
-    location.pathname.startsWith("/visualization");
+    location.pathname.startsWith("/visualization") ||
+    location.pathname.startsWith("/openings");
 
   return (
     <motion.nav
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 border-b ${
-        scrolled || mobileMenuOpen || isMethodologyPage
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 border-b ${scrolled || mobileMenuOpen || isMethodologyPage
           ? "bg-stone-100/90 dark:bg-black/90 backdrop-blur-xl border-gray-300 dark:border-white/10"
           : "bg-transparent border-transparent"
-      }`}
+        }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
@@ -152,13 +153,12 @@ const Navbar = () => {
                       navigate(item.href);
                     }
                   }}
-                  className={`text-sm font-medium transition-colors duration-300 tracking-wide cursor-pointer whitespace-nowrap ${
-                    isActive
+                  className={`text-sm font-medium transition-colors duration-300 tracking-wide cursor-pointer whitespace-nowrap ${isActive
                       ? "text-amber-500 font-semibold"
                       : useDarkText
-                      ? "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
-                      : "text-white/90 hover:text-white"
-                  }`}
+                        ? "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+                        : "text-white/90 hover:text-white"
+                    }`}
                   initial={{ opacity: 0, y: -20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1, duration: 0.4 }}
@@ -217,6 +217,28 @@ const Navbar = () => {
               </AnimatePresence>
             </div>
 
+            {/* Openings Tab */}
+            <motion.a
+              href="/openings"
+              onClick={(e) => {
+                e.preventDefault();
+                navigate("/openings");
+              }}
+              className={`text-sm font-medium transition-colors duration-300 tracking-wide cursor-pointer whitespace-nowrap ${
+                location.pathname === "/openings"
+                  ? "text-amber-500 font-semibold"
+                  : useDarkText
+                  ? "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+                  : "text-white/90 hover:text-white"
+              }`}
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: (navItems.length + 1) * 0.1, duration: 0.4 }}
+              whileHover={{ y: -2 }}
+            >
+              Openings
+            </motion.a>
+
             {/* Theme Toggle */}
             <ThemeToggle />
 
@@ -252,7 +274,7 @@ const Navbar = () => {
                   <LogIn className="w-4 h-4" />
                   Login
                 </motion.button>
-                <motion.a
+                {/* <motion.a
                   href="/#enquiry"
                   onClick={(e) => handleHashNavigation(e, "enquiry")}
                   className={`px-6 py-2.5 border rounded-lg text-sm font-medium transition-all duration-300 cursor-pointer ${useDarkText ? "border-gray-400 dark:border-white/30 text-gray-700 dark:text-white hover:bg-gray-800 hover:text-white dark:hover:bg-white dark:hover:text-black" : "border-white/50 text-white hover:bg-white/20"}`}
@@ -263,7 +285,7 @@ const Navbar = () => {
                   whileTap={{ scale: 0.95 }}
                 >
                   Get Started
-                </motion.a>
+                </motion.a> */}
               </div>
             )}
           </div>
@@ -314,11 +336,10 @@ const Navbar = () => {
                 <a
                   key={item.name}
                   href={item.href}
-                  className={`block transition-colors py-2 ${
-                    isActive
+                  className={`block transition-colors py-2 ${isActive
                       ? "text-amber-500 font-semibold"
                       : "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
-                  }`}
+                    }`}
                   onClick={(e) => {
                     setMobileMenuOpen(false);
                     if (item.hash) {
@@ -377,6 +398,23 @@ const Navbar = () => {
                 )}
               </AnimatePresence>
             </div>
+
+            {/* Mobile Openings Tab */}
+            <a
+              href="/openings"
+              className={`block transition-colors py-2 ${
+                location.pathname === "/openings"
+                  ? "text-amber-500 font-semibold"
+                  : "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+              }`}
+              onClick={(e) => {
+                e.preventDefault();
+                setMobileMenuOpen(false);
+                navigate("/openings");
+              }}
+            >
+              Openings
+            </a>
 
             {isAuthenticated ? (
               <>

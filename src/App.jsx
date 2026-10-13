@@ -48,6 +48,7 @@ const PurchaseDashboard = lazy(() => import("./components/PurchaseDashboard"));
 const EduLoginPage = lazy(() => import("./components/EduLoginPage"));
 const Methodology = lazy(() => import("./components/Methodology"));
 const VisualizationPage = lazy(() => import("./components/VisualizationPage"));
+const Openings = lazy(() => import("./components/Openings"));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -127,7 +128,8 @@ const AppContent = () => {
     location.pathname.startsWith("/methodology") ||
     location.pathname.startsWith("/our-approach") ||
     location.pathname.startsWith("/visualization") ||
-    location.pathname.startsWith("/visualize");
+    location.pathname.startsWith("/visualize") ||
+    location.pathname.startsWith("/openings");
 
   return (
     <>
@@ -248,6 +250,14 @@ const AppContent = () => {
               element={
                 <Suspense fallback={<PageLoader />}>
                   <VisualizationPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/openings"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <Openings />
                 </Suspense>
               }
             />

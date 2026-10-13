@@ -1,0 +1,33 @@
+import { request } from "./api";
+
+/**
+ * Presentation Service
+ * Handles API calls for the "Our Approach" / Presentation module
+ */
+
+/**
+ * Fetch active presentation with its slides and documents
+ * GET /server/presentation/active (or ?wph_id=:wphId)
+ * 
+ * @param {number|string} [wphId] - Optional presentation ID
+ * @returns {Promise<Object>} Presentation payload containing header, slides, and documents
+ */
+export const getActivePresentation = async (wphId = null) => {
+  const query = wphId ? `?wph_id=${encodeURIComponent(wphId)}` : "";
+  return request(`/presentation/active${query}`, {
+    method: "GET",
+  });
+};
+
+/**
+ * Fetch presentation by ID
+ * GET /server/presentation/:wphId
+ * 
+ * @param {number|string} wphId - Presentation ID
+ * @returns {Promise<Object>}
+ */
+export const getPresentationById = async (wphId) => {
+  return request(`/presentation/${encodeURIComponent(wphId)}`, {
+    method: "GET",
+  });
+};
