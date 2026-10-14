@@ -997,10 +997,37 @@ const Methodology = () => {
     setTimeLeft(initialDuration);
   }, [currentIndex, activeSlides]);
 
+  // Flag to ensure auto-fullscreen only triggers once on initial entry
+  const hasAutoFullScreenTriggeredRef = useRef(false);
+
+  // Auto-fullscreen after 2 seconds when user arrives at the slides screen for the first time
+  useEffect(() => {
+    if (hasAutoFullScreenTriggeredRef.current) return;
+
+    const autoFsTimer = setTimeout(() => {
+      if (hasAutoFullScreenTriggeredRef.current) return;
+      hasAutoFullScreenTriggeredRef.current = true;
+
+      // Automatically transition slides to full screen after 2 seconds
+      setIsFullScreen(true);
+      if (slideshowRef.current?.requestFullscreen) {
+        slideshowRef.current.requestFullscreen().catch(() => {});
+      } else if (slideshowRef.current?.webkitRequestFullscreen) {
+        slideshowRef.current.webkitRequestFullscreen();
+      }
+    }, 2000);
+
+    return () => clearTimeout(autoFsTimer);
+  }, []);
+
   // Listen to browser fullscreen change events
   useEffect(() => {
     const handleFullScreenChange = () => {
-      setIsFullScreen(!!document.fullscreenElement);
+      const isDocFs = !!document.fullscreenElement;
+      setIsFullScreen(isDocFs);
+      if (!isDocFs) {
+        hasAutoFullScreenTriggeredRef.current = true;
+      }
     };
     document.addEventListener("fullscreenchange", handleFullScreenChange);
     document.addEventListener("webkitfullscreenchange", handleFullScreenChange);
@@ -1086,6 +1113,7 @@ const Methodology = () => {
     }
   }, [showCompletionModal, isFullScreen]);
 
+  {/* Previous toggleFullScreen preserved per zero-deletions rule:
   const toggleFullScreen = useCallback(() => {
     if (!document.fullscreenElement) {
       if (slideshowRef.current?.requestFullscreen) {
@@ -1101,6 +1129,28 @@ const Methodology = () => {
       }
     }
   }, []);
+  */}
+
+  const toggleFullScreen = useCallback(() => {
+    hasAutoFullScreenTriggeredRef.current = true; // User manually toggled fullscreen; do not override with auto-timer
+    if (!document.fullscreenElement && !isFullScreen) {
+      setIsFullScreen(true);
+      if (slideshowRef.current?.requestFullscreen) {
+        slideshowRef.current.requestFullscreen().catch(() => {});
+      } else if (slideshowRef.current?.webkitRequestFullscreen) {
+        slideshowRef.current.webkitRequestFullscreen();
+      }
+    } else {
+      setIsFullScreen(false);
+      if (document.fullscreenElement) {
+        if (document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        }
+      }
+    }
+  }, [isFullScreen]);
 
   // Refs for the horizontal scrollable slide thumbnail containers (normal view and fullscreen view)
   const normalThumbnailContainerRef = useRef(null);
@@ -1757,7 +1807,16 @@ const Methodology = () => {
       } else if (e.key === " " && e.target === document.body) {
         e.preventDefault();
         handleTogglePlayPause();
+      {/* Previous f key handler preserved per zero-deletions rule:
       } else if (e.key === "f" || e.key === "F") {
+        e.preventDefault();
+        toggleFullScreen();
+      }
+      */}
+      } else if (e.key === "f" || e.key === "F") {
+        e.preventDefault();
+        toggleFullScreen();
+      } else if (e.key === "Escape" && isFullScreen) {
         e.preventDefault();
         toggleFullScreen();
       }
@@ -1765,7 +1824,7 @@ const Methodology = () => {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleNext, handlePrev, handleTogglePlayPause, toggleFullScreen]);
+  }, [handleNext, handlePrev, handleTogglePlayPause, toggleFullScreen, isFullScreen]);
 
   // Calculate dynamic circular progress and color (Green -> Yellow -> Red)
   const activeCurrentTime = isPaused ? pauseTimeLeft : timeLeft;
@@ -2963,10 +3022,19 @@ const Methodology = () => {
           className={`relative w-full ${isFullScreen ? "h-screen w-screen bg-black flex items-center justify-center p-0" : "flex-1 min-h-0 w-full flex items-center justify-center bg-black/95 rounded-2xl border border-white/20 dark:border-white/15 shadow-[0_0_30px_rgba(249,115,22,0.18),0_0_40px_rgba(16,185,129,0.18),0_15px_35px_rgba(0,0,0,0.5)]"} overflow-hidden select-none group transition-[filter] duration-300`}
         >
         */}
+        {/* Previous slideshow container class preserved per zero-deletions rule:
         <div
           ref={slideshowRef}
           className={`relative w-full ${isFullScreen
             ? "h-screen w-screen bg-black flex items-center justify-center p-0"
+            : "flex-1 min-h-0 w-full flex items-center justify-center bg-black/95 rounded-2xl border border-white/20 dark:border-white/15 shadow-[0_0_30px_rgba(249,115,22,0.18),0_0_40px_rgba(16,185,129,0.18),0_15px_35px_rgba(0,0,0,0.5)]"
+            } overflow-hidden select-none group`}
+        >
+        */}
+        <div
+          ref={slideshowRef}
+          className={`relative w-full ${isFullScreen
+            ? "fixed inset-0 z-50 h-screen w-screen bg-black flex items-center justify-center p-0"
             : "flex-1 min-h-0 w-full flex items-center justify-center bg-black/95 rounded-2xl border border-white/20 dark:border-white/15 shadow-[0_0_30px_rgba(249,115,22,0.18),0_0_40px_rgba(16,185,129,0.18),0_15px_35px_rgba(0,0,0,0.5)]"
             } overflow-hidden select-none group`}
         >
@@ -3027,9 +3095,24 @@ const Methodology = () => {
           </div>
           */}
 
-          {/* 3D Bharat Logo: Only rendered when in fullscreen view (positioned cleanly beside top-left back button) */}
+          {/* Previous logo position beside back button preserved per zero-deletions rule:
           {isFullScreen && (
             <div className="absolute top-3 left-16 sm:top-4 sm:left-18 z-20 select-none transition-all duration-300">
+              <img
+                src="/images/logo2.png"
+                alt="3D Bharat"
+                className="w-16 h-16 sm:w-20 sm:h-20 aspect-square object-contain drop-shadow-[0_4px_14px_rgba(0,0,0,0.7)] transition-all duration-300 hover:scale-105"
+                onError={(e) => {
+                  e.target.src = "/images/logo.png";
+                }}
+              />
+            </div>
+          )}
+          */}
+
+          {/* 3D Bharat Logo: Rendered when in fullscreen view (placed cleanly at top-left corner) */}
+          {isFullScreen && (
+            <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-20 select-none transition-all duration-300">
               <img
                 src="/images/logo2.png"
                 alt="3D Bharat"
@@ -3849,7 +3932,7 @@ const Methodology = () => {
           </button>
           */}
 
-          {/* Top-Left Back Arrow Button (Redirects back to Openings module) */}
+          {/* Previous unconditional Top-Left Back Arrow Button preserved per zero-deletions rule:
           <button
             type="button"
             onClick={(e) => {
@@ -3862,6 +3945,23 @@ const Methodology = () => {
           >
             <ArrowLeft className="w-5 h-5 text-gray-200 group-hover:text-amber-400 group-hover:-translate-x-0.5 transition-all" />
           </button>
+          */}
+
+          {/* Top-Left Back Arrow Button (Redirects back to Openings module) - Only shown in normal view screen */}
+          {!isFullScreen && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate("/openings");
+              }}
+              className="absolute top-3 left-3 sm:top-4 sm:left-4 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-black/60 hover:bg-black/90 text-white border border-white/20 hover:border-amber-400/80 shadow-xl backdrop-blur-md flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95 z-20 group cursor-pointer"
+              title="Back to Openings"
+              aria-label="Back to Openings"
+            >
+              <ArrowLeft className="w-5 h-5 text-gray-200 group-hover:text-amber-400 group-hover:-translate-x-0.5 transition-all" />
+            </button>
+          )}
 
           {/* Top-Right Download Slide Image Button (Beside Fullscreen button) */}
           <button
