@@ -37,6 +37,7 @@ import ConnectModal from "./ConnectModal";
 {/* Previous backend service import preserved per zero-deletions rule:
 import { getActivePresentation } from "../services/presentationService";
 */}
+import { getActivePresentation } from "../services/presentationService";
 
 {/* Previous 10/11 slides images and 9 audios preserved per zero-deletions rule:
 export const SLIDES_IMAGES_OLD = [
@@ -477,14 +478,20 @@ const Methodology = () => {
   const { openModal: openLoginModal } = useLoginModal();
   const { isAuthenticated, user } = useAuth();
   const [searchParams] = useSearchParams();
+  const targetPptId = searchParams.get("ppt") || searchParams.get("wph_id") || 1;
   const initialSlideParam = searchParams.get("slide");
   {/* Previous 9 max limit preserved per zero-deletions rule:
   const parsedInitialIndex = initialSlideParam !== null && !isNaN(Number(initialSlideParam))
     ? Math.max(0, Math.min(Number(initialSlideParam) - 1, 9))
     : 0;
   */}
+  {/* Previous 11 max limit preserved per zero-deletions rule:
   const parsedInitialIndex = initialSlideParam !== null && !isNaN(Number(initialSlideParam))
     ? Math.max(0, Math.min(Number(initialSlideParam) - 1, 11))
+    : 0;
+  */}
+  const parsedInitialIndex = initialSlideParam !== null && !isNaN(Number(initialSlideParam))
+    ? Math.max(0, Number(initialSlideParam) - 1)
     : 0;
 
   {/* Previous static 0 currentIndex preserved per zero-deletions rule:
@@ -964,10 +971,60 @@ const Methodology = () => {
   }, []);
   */}
 
+  {/* Previous static page title effect preserved per zero-deletions rule:
   // Frontend-only presentation configuration: Page title
   useEffect(() => {
     document.title = "3D Bharat - To Achieve Precise Work Progress Monitoring";
   }, []);
+  */}
+
+  // Dynamic presentation fetch effect keyed to targetPptId
+  useEffect(() => {
+    let isMounted = true;
+    const fetchPresentation = async () => {
+      try {
+        setIsLoading(true);
+        setFetchError(null);
+        const res = await getActivePresentation(targetPptId);
+        if (isMounted && res) {
+          if (res.slides && res.slides.length > 0) {
+            setSlides(res.slides);
+          }
+          if (res.header) {
+            setPresentationHeader(res.header);
+            document.title = `${res.header?.web_ppt_name || "Presentation"} - 3D Bharat`;
+          }
+          if (res.documents) {
+            setDocuments(res.documents);
+          }
+          // Reset currentIndex to 0 (or url slide param) whenever targetPptId changes
+          const slideParam = searchParams.get("slide");
+          const slideNum = slideParam !== null ? parseInt(slideParam, 10) : 1;
+          const targetIndex = (!isNaN(slideNum) && slideNum >= 1)
+            ? Math.max(0, Math.min(slideNum - 1, (res.slides?.length || 1) - 1))
+            : 0;
+          setCurrentIndex(targetIndex);
+          setIsPaused(false);
+          setShowCompletionModal(false);
+        }
+      } catch (err) {
+        console.warn("[Methodology] Error fetching presentation from backend, using default fallback:", err);
+        if (isMounted) {
+          setFetchError(err?.message || "Failed to load presentation from backend");
+          document.title = "3D Bharat - To Achieve Precise Work Progress Monitoring";
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchPresentation();
+    return () => {
+      isMounted = false;
+    };
+  }, [targetPptId]);
 
 
 
@@ -1767,20 +1824,25 @@ const Methodology = () => {
     return () => clearTimeout(timer);
   }, [currentIndex, isPaused, showCompletionModal, currentSlide, activeSlides.length, goToSlide, timeLeft]);
 
-  // 2. 1-Minute Pause Timer Effect: Active when an image slide is paused (isPaused && !showCompletionModal)
+  // 2. 1-Minute Pause Timer Effect: Active when an image or video slide is paused (isPaused && !showCompletionModal)
   // When user pauses, a 60s timer starts. If 1 minute passes without user interaction, the Restart / Next Slide popup modal opens.
   useEffect(() => {
     if (!isPaused || showCompletionModal) return;
 
+    {/* Previous exclusion of video slides (type === 2) preserved per zero-deletions rule:
     if (currentSlide.type === 2) {
       return;
     }
+    */}
 
     if (pauseTimeLeft <= 0) {
       // 1 minute pause timer elapsed without action -> prompt user with Restart / Next Slide modal
       setShowCompletionModal(true);
       if (audioRef.current) {
         audioRef.current.pause();
+      }
+      if (videoRef.current) {
+        videoRef.current.pause();
       }
       return;
     }
@@ -3339,6 +3401,13 @@ const Methodology = () => {
                     className="max-w-full max-h-full w-auto h-auto object-contain rounded-lg shadow-2xl"
                   />
                   */}
+                  {/* Previous video onEnded opening completion modal preserved per zero-deletions rule:
+                  onEnded={() => {
+                    setTimeLeft(0);
+                    setIsPaused(true);
+                    setShowCompletionModal(true);
+                  }}
+                  */}
                   <video
                     ref={videoRef}
                     key={currentSlide.location}
@@ -3373,8 +3442,12 @@ const Methodology = () => {
                     }}
                     onEnded={() => {
                       setTimeLeft(0);
-                      setIsPaused(true);
-                      setShowCompletionModal(true);
+                      if (currentIndex < activeSlides.length - 1) {
+                        goToSlide(currentIndex + 1);
+                      } else {
+                        setIsPaused(true);
+                        setShowCompletionModal(true);
+                      }
                     }}
                     onClick={handleTogglePlayPause}
                     className="max-w-full max-h-full w-auto h-auto object-contain rounded-lg shadow-2xl cursor-pointer"
@@ -3408,7 +3481,7 @@ const Methodology = () => {
                   </AnimatePresence>
                   */}
 
-                  {/* Compact, Sleek & Attractive Video Play Bar (Single-Row Floating Capsule) */}
+                  {/* Previous Floating Video Play Bar (audio/scrubber bar on video) preserved per zero-deletions rule:
                   <AnimatePresence>
                     {isVideoControlsVisible && (
                       <motion.div
@@ -3424,10 +3497,10 @@ const Methodology = () => {
                           }`}
                         onClick={(e) => e.stopPropagation()}
                       >
-                        {/* Streamlined Floating Pill Container */}
+                        // Streamlined Floating Pill Container
                         <div className="w-full max-w-[540px] bg-black/75 hover:bg-black/90 backdrop-blur-2xl border border-white/20 rounded-full px-3 py-1.5 shadow-[0_8px_30px_rgba(0,0,0,0.6)] text-white flex items-center gap-2 select-none">
 
-                          {/* 1. Play / Pause Button (Gradient Round Button) */}
+                          // 1. Play / Pause Button (Gradient Round Button)
                           <button
                             type="button"
                             onClick={handleTogglePlayPause}
@@ -3442,12 +3515,12 @@ const Methodology = () => {
                             )}
                           </button>
 
-                          {/* 2. Current Time (Elapsed) */}
+                          // 2. Current Time (Elapsed)
                           <span className="text-[10px] font-mono font-semibold text-white/90 shrink-0">
                             {formatVideoTime(videoCurrentTime)}
                           </span>
 
-                          {/* 3. Interactive Scrubber Timeline (Flex Grow) */}
+                          // 3. Interactive Scrubber Timeline (Flex Grow)
                           <div
                             ref={scrubBarRef}
                             onMouseDown={(e) => {
@@ -3458,7 +3531,7 @@ const Methodology = () => {
                             onMouseLeave={() => setHoverTime(null)}
                             className="relative flex-1 h-3 flex items-center cursor-pointer group/scrub min-w-[100px]"
                           >
-                            {/* Hover Time Tooltip */}
+                            // Hover Time Tooltip
                             {hoverTime !== null && (
                               <div
                                 className="absolute -top-7 -translate-x-1/2 px-1.5 py-0.5 rounded bg-neutral-900 border border-white/20 text-[10px] font-mono text-white pointer-events-none shadow-lg z-20"
@@ -3468,16 +3541,16 @@ const Methodology = () => {
                               </div>
                             )}
 
-                            {/* Background Track */}
+                            // Background Track
                             <div className="w-full h-1 group-hover/scrub:h-1.5 rounded-full bg-white/20 transition-all relative overflow-hidden">
-                              {/* Buffered Bar */}
+                              // Buffered Bar
                               <div
                                 className="absolute top-0 bottom-0 left-0 bg-white/30 rounded-full transition-all duration-300"
                                 style={{
                                   width: `${videoDuration ? (videoBuffered / videoDuration) * 100 : 0}%`,
                                 }}
                               />
-                              {/* Played Bar */}
+                              // Played Bar
                               <div
                                 className="absolute top-0 bottom-0 left-0 bg-gradient-to-r from-orange-500 via-amber-500 to-emerald-400 rounded-full transition-all"
                                 style={{
@@ -3486,7 +3559,7 @@ const Methodology = () => {
                               />
                             </div>
 
-                            {/* Draggable Scrubber Thumb */}
+                            // Draggable Scrubber Thumb
                             <div
                               className="absolute w-2.5 h-2.5 rounded-full bg-white border border-orange-500 shadow-md -translate-x-1/2 opacity-0 group-hover/scrub:opacity-100 transition-opacity pointer-events-none"
                               style={{
@@ -3495,12 +3568,12 @@ const Methodology = () => {
                             />
                           </div>
 
-                          {/* 4. Total Duration */}
+                          // 4. Total Duration
                           <span className="text-[10px] font-mono font-medium text-white/50 shrink-0">
                             {formatVideoTime(videoDuration || currentSlide.video_duration || 30)}
                           </span>
 
-                          {/* 5. Volume Mute & Mini Slider */}
+                          // 5. Volume Mute & Mini Slider
                           <div className="flex items-center gap-1 group/vol shrink-0">
                             <button
                               type="button"
@@ -3534,7 +3607,7 @@ const Methodology = () => {
                             />
                           </div>
 
-                          {/* 6. Playback Speed Selector */}
+                          // 6. Playback Speed Selector
                           <div className="relative shrink-0">
                             <button
                               type="button"
@@ -3572,7 +3645,7 @@ const Methodology = () => {
                             </AnimatePresence>
                           </div>
 
-                          {/* 7. Restart Button */}
+                          // 7. Restart Button
                           <button
                             type="button"
                             onClick={() => {
@@ -3595,6 +3668,7 @@ const Methodology = () => {
                       </motion.div>
                     )}
                   </AnimatePresence>
+                  */}
                 </motion.div>
               ) : (
                 <motion.div

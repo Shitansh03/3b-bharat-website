@@ -24,12 +24,14 @@ const openingsList = [
     badgeColor: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
     status: "Actively Hiring",
     isClickable: true,
+    pptId: 1,
     description:
       "Design intuitive web & tablet interfaces for 3D construction mapping, point-cloud visualization tools, and client dashboards.",
     skills: ["Figma", "UI/UX", "Wireframing", "Design Systems"],
     ctaText: "Apply",
   },
   {
+    /* Previous python-dev configuration preserved per zero-deletions rule:
     id: "python-dev",
     title: "Python Developer",
     category: "Engineering",
@@ -42,6 +44,20 @@ const openingsList = [
       "Build high-performance spatial data processing scripts, geospatial algorithms, and backend services.",
     skills: ["Python", "FastAPI / Django", "Data Pipelines"],
     ctaText: "Opening Soon",
+    */
+    id: "python-dev",
+    title: "Python Developer",
+    category: "Engineering",
+    type: "Full Time",
+    icon: Code2,
+    badgeColor: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
+    status: "Actively Hiring",
+    isClickable: true,
+    pptId: 2,
+    description:
+      "Build high-performance spatial data processing scripts, geospatial algorithms, and backend services.",
+    skills: ["Python", "FastAPI / Django", "Data Pipelines"],
+    ctaText: "Apply",
   },
   {
     id: "nodejs-dev",
@@ -137,8 +153,12 @@ const Openings = () => {
         navigate("/our-approach");
       }
       */}
-      // Redirect to the 1st slide
+      {/* Previous static slide 1 redirect preserved per zero-deletions rule:
       navigate("/our-approach?slide=1");
+      */}
+      // Dynamic navigation with ppt ID and slide 1
+      const targetPpt = opening.pptId || 1;
+      navigate(`/our-approach?ppt=${targetPpt}&slide=1`);
     }
   };
 
