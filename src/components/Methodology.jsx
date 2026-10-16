@@ -1057,7 +1057,7 @@ const Methodology = () => {
   // Flag to ensure auto-fullscreen only triggers once on initial entry
   const hasAutoFullScreenTriggeredRef = useRef(false);
 
-  // Auto-fullscreen after 2 seconds when user arrives at the slides screen for the first time
+  {/* Previous 2-second auto-fullscreen timer preserved per zero-deletions rule:
   useEffect(() => {
     if (hasAutoFullScreenTriggeredRef.current) return;
 
@@ -1076,6 +1076,34 @@ const Methodology = () => {
 
     return () => clearTimeout(autoFsTimer);
   }, []);
+  */}
+
+  // Dynamic Auto-fullscreen after 5 seconds based on presentationHeader.full_screen (1 = yes [auto 5s], 2 = no [manual only])
+  useEffect(() => {
+    if (hasAutoFullScreenTriggeredRef.current) return;
+
+    // If full_screen is explicitly 2 (no), do not auto fullscreen
+    if (presentationHeader && Number(presentationHeader.full_screen) === 2) {
+      return;
+    }
+
+    const autoFsTimer = setTimeout(() => {
+      if (hasAutoFullScreenTriggeredRef.current) return;
+      // Double check full_screen setting before entering fullscreen
+      if (presentationHeader && Number(presentationHeader.full_screen) === 2) return;
+      hasAutoFullScreenTriggeredRef.current = true;
+
+      // Automatically transition slides to full screen after 5 seconds
+      setIsFullScreen(true);
+      if (slideshowRef.current?.requestFullscreen) {
+        slideshowRef.current.requestFullscreen().catch(() => {});
+      } else if (slideshowRef.current?.webkitRequestFullscreen) {
+        slideshowRef.current.webkitRequestFullscreen();
+      }
+    }, 5000);
+
+    return () => clearTimeout(autoFsTimer);
+  }, [presentationHeader?.full_screen]);
 
   // Listen to browser fullscreen change events
   useEffect(() => {
@@ -1808,10 +1836,20 @@ const Methodology = () => {
         // Automatically start the next slide
         goToSlide(currentIndex + 1);
       } else {
+        {/* Previous last slide completion handling preserved per zero-deletions rule:
+        setIsPaused(true);
+        if (audioRef.current) {
+          audioRef.current.pause();
+        }
+        */}
         // Last slide: stop and do not start the 1st slide again
         setIsPaused(true);
         if (audioRef.current) {
           audioRef.current.pause();
+        }
+        // Dynamic Connect With Us Popup on last slide: 1 = yes (open modal), 2 = no (do not open modal)
+        if (Number(presentationHeader?.connect_with_us_popus) === 1) {
+          setIsConnectModalOpen(true);
         }
       }
       return;
@@ -1822,7 +1860,7 @@ const Methodology = () => {
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [currentIndex, isPaused, showCompletionModal, currentSlide, activeSlides.length, goToSlide, timeLeft]);
+  }, [currentIndex, isPaused, showCompletionModal, currentSlide, activeSlides.length, goToSlide, timeLeft, presentationHeader]);
 
   // 2. 1-Minute Pause Timer Effect: Active when an image or video slide is paused (isPaused && !showCompletionModal)
   // When user pauses, a 60s timer starts. If 1 minute passes without user interaction, the Restart / Next Slide popup modal opens.
@@ -3401,11 +3439,22 @@ const Methodology = () => {
                     className="max-w-full max-h-full w-auto h-auto object-contain rounded-lg shadow-2xl"
                   />
                   */}
-                  {/* Previous video onEnded opening completion modal preserved per zero-deletions rule:
+                  {/* Previous video onEnded implementations preserved per zero-deletions rule:
+                  // Version 1 (open completion modal):
                   onEnded={() => {
                     setTimeLeft(0);
                     setIsPaused(true);
                     setShowCompletionModal(true);
+                  }}
+                  // Version 2 (auto-advance with completion modal fallback on last slide):
+                  onEnded={() => {
+                    setTimeLeft(0);
+                    if (currentIndex < activeSlides.length - 1) {
+                      goToSlide(currentIndex + 1);
+                    } else {
+                      setIsPaused(true);
+                      setShowCompletionModal(true);
+                    }
                   }}
                   */}
                   <video
@@ -3446,7 +3495,12 @@ const Methodology = () => {
                         goToSlide(currentIndex + 1);
                       } else {
                         setIsPaused(true);
-                        setShowCompletionModal(true);
+                        // Check presentationHeader.connect_with_us_popus (1 = yes [open ConnectModal at end of last slide], 2 = no [show completion modal])
+                        if (Number(presentationHeader?.connect_with_us_popus) === 1) {
+                          setIsConnectModalOpen(true);
+                        } else {
+                          setShowCompletionModal(true);
+                        }
                       }
                     }}
                     onClick={handleTogglePlayPause}

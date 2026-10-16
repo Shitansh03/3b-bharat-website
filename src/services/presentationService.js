@@ -31,3 +31,14 @@ export const getPresentationById = async (wphId) => {
     method: "GET",
   });
 };
+
+/**
+ * Fetch list of all active presentation IDs currently published in the database
+ * GET /server/presentation/active-ids
+ * @returns {Promise<Object>} { activeIds: number[] }
+ */
+export const getActivePresentationIds = async () => {
+  return request("/presentation/active-ids", {
+    method: "GET",
+  });
+};

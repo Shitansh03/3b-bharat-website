@@ -12,7 +12,8 @@ import {
   Lock,
   Clock,
 } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { getActivePresentationIds } from "../services/presentationService";
 
 const openingsList = [
   {
@@ -68,6 +69,7 @@ const openingsList = [
     badgeColor: "bg-gray-500/10 text-gray-500 dark:text-gray-400 border-gray-400/20",
     status: "Opening Soon",
     isClickable: false,
+    pptId: 3,
     description:
       "Develop scalable microservices, authentication systems, payment workflows, and cloud storage pipelines.",
     skills: ["Node.js", "Express.js", "PostgreSQL", "REST APIs"],
@@ -82,6 +84,7 @@ const openingsList = [
     badgeColor: "bg-gray-500/10 text-gray-500 dark:text-gray-400 border-gray-400/20",
     status: "Opening Soon",
     isClickable: false,
+    pptId: 4,
     description:
       "Drive institutional awareness and outreach to construction contractors and infrastructure planners across India.",
     skills: ["B2B Outreach", "Client Relationship", "Lead Generation"],
@@ -96,6 +99,7 @@ const openingsList = [
     badgeColor: "bg-gray-500/10 text-gray-500 dark:text-gray-400 border-gray-400/20",
     status: "Opening Soon",
     isClickable: false,
+    pptId: 5,
     description:
       "Build offline-first tablet applications used by site engineers for chainage-level construction tracking.",
     skills: ["Flutter", "Android SDK", "Offline Sync"],
@@ -110,6 +114,7 @@ const openingsList = [
     badgeColor: "bg-gray-500/10 text-gray-500 dark:text-gray-400 border-gray-400/20",
     status: "Opening Soon",
     isClickable: false,
+    pptId: 6,
     description:
       "Train computer vision models for automated defect recognition, point-cloud segmentation, and volume calculation.",
     skills: ["PyTorch / TensorFlow", "Computer Vision", "3D Point Clouds"],
@@ -139,26 +144,42 @@ const cardVariants = {
 const Openings = () => {
   const navigate = useNavigate();
 
+  // Active presentation IDs state (default fallback ensures offline safety)
+  const [activePptIds, setActivePptIds] = useState([1, 2, 4]);
+
+  useEffect(() => {
+    let isMounted = true;
+    getActivePresentationIds()
+      .then((res) => {
+        if (isMounted && res?.activeIds) {
+          setActivePptIds(res.activeIds);
+        }
+      })
+      .catch((err) => {
+        console.warn("[Openings] Could not fetch active IDs, using default active set:", err);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   useEffect(() => {
     document.title = "3D Bharat - Openings & Careers";
     window.scrollTo(0, 0);
   }, []);
 
+  {/* Previous handleCardClick with static opening.isClickable preserved per zero-deletions rule:
   const handleCardClick = (opening) => {
     if (opening.isClickable) {
-      {/* Previous navigate to slide 2 for figma-uiux preserved per zero-deletions rule:
-      if (opening.id === "figma-uiux") {
-        navigate("/our-approach?slide=2");
-      } else {
-        navigate("/our-approach");
-      }
-      */}
-      {/* Previous static slide 1 redirect preserved per zero-deletions rule:
-      navigate("/our-approach?slide=1");
-      */}
-      // Dynamic navigation with ppt ID and slide 1
       const targetPpt = opening.pptId || 1;
       navigate(`/our-approach?ppt=${targetPpt}&slide=1`);
+    }
+  };
+  */}
+  const handleCardClick = (opening) => {
+    const isClickable = activePptIds.includes(opening.pptId);
+    if (isClickable) {
+      navigate(`/our-approach?ppt=${opening.pptId}&slide=1`);
     }
   };
 
@@ -200,7 +221,17 @@ const Openings = () => {
         >
           {openingsList.map((opening) => {
             const Icon = opening.icon;
+
+            {/* Previous static isClickable assignment preserved per zero-deletions rule:
             const isClickable = opening.isClickable;
+            */}
+            // Dynamic card appearance, status & interactivity based on active presentation IDs API
+            const isClickable = activePptIds.includes(opening.pptId);
+            const status = isClickable ? "Actively Hiring" : "Opening Soon";
+            const badgeColor = isClickable
+              ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
+              : "bg-gray-500/10 text-gray-500 dark:text-gray-400 border-gray-400/20";
+            const ctaText = isClickable ? "Apply" : "Opening Soon";
 
             return (
               <motion.div
@@ -247,7 +278,7 @@ const Openings = () => {
                     </div>
 
                     <span
-                      className={`shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${opening.badgeColor}`}
+                      className={`shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${badgeColor}`}
                     >
                       {isClickable ? (
                         <>
@@ -255,12 +286,12 @@ const Openings = () => {
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                             <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
                           </span>
-                          <span>{opening.status}</span>
+                          <span>{status}</span>
                         </>
                       ) : (
                         <>
                           <Clock className="w-2.5 h-2.5" />
-                          <span>{opening.status}</span>
+                          <span>{status}</span>
                         </>
                       )}
                     </span>
@@ -290,13 +321,13 @@ const Openings = () => {
 
                   {isClickable ? (
                     <div className="inline-flex items-center gap-1.5 text-amber-600 dark:text-amber-400 group-hover:text-amber-700 dark:group-hover:text-amber-300 font-bold transition-all">
-                      <span>{opening.ctaText}</span>
+                      <span>{ctaText}</span>
                       <ArrowRight className="w-3.5 h-3.5 transform group-hover:translate-x-1.5 transition-transform duration-200" />
                     </div>
                   ) : (
                     <div className="inline-flex items-center gap-1 text-gray-400 dark:text-gray-500 font-medium">
                       <Lock className="w-3 h-3" />
-                      <span>{opening.ctaText}</span>
+                      <span>{ctaText}</span>
                     </div>
                   )}
                 </div>
