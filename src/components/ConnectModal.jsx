@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, CheckCircle, AlertCircle, X } from "lucide-react";
 
@@ -170,11 +171,26 @@ const ConnectModal = ({ isOpen, onClose }) => {
     }
   };
 
+  /* PRESERVED: Previous direct return without createPortal and z-50 preserved per zero-deletions rule:
   return (
     <AnimatePresence>
       {isOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-md overflow-hidden"
+          onClick={onClose}
+        >
+          ...
+        </div>
+      )}
+    </AnimatePresence>
+  );
+  */
+
+  const modalContent = (
+    <AnimatePresence>
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-md overflow-y-auto"
           onClick={onClose}
         >
           <motion.div
@@ -361,6 +377,8 @@ const ConnectModal = ({ isOpen, onClose }) => {
       )}
     </AnimatePresence>
   );
+
+  return typeof document !== "undefined" ? createPortal(modalContent, document.body) : modalContent;
 };
 
 export default ConnectModal;

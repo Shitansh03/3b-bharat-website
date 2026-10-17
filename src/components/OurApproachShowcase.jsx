@@ -15,9 +15,12 @@ import {
   ShieldCheck,
   ChevronRight,
   Play,
+  Lock,
+  ShieldAlert,
 } from "lucide-react";
 import { getCategoryCards } from "../services/presentationService";
 import Methodology from "./Methodology";
+import ConnectModal from "./ConnectModal";
 
 /**
  * OurApproachShowcase
@@ -662,6 +665,7 @@ const DomainCardsGrid = ({ category, onSelectCard, onBack, onSwitchCategory }) =
   const [cards, setCards] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState(null);
+  const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
 
   const isTechnical = category === "technical";
   const categoryType = isTechnical ? 1 : 2;
@@ -972,96 +976,155 @@ const DomainCardsGrid = ({ category, onSelectCard, onBack, onSwitchCategory }) =
           })}
         </motion.div>
       ) : (
-        /* Spacious, Loose & Free Single-Screen Enterprise Empty State (Zero Vertical Scroll) */
+        <>
+          {/* PRESERVED: Previous "Modules Under Active Development" empty state preserved per zero-deletions rule:
+          <motion.div
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.3 }}
+            className="max-w-2xl mx-auto my-auto p-6 sm:p-7 rounded-3xl bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl border border-gray-200/90 dark:border-white/10 shadow-xl text-center"
+          >
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 mb-3 shadow-sm">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Modules Under Active Development</span>
+            </div>
+
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500/20 via-teal-500/15 to-transparent text-emerald-500 mx-auto flex items-center justify-center mb-3 border border-emerald-500/30 shadow-md shadow-emerald-500/15">
+              {isTechnical ? <Cpu className="w-6 h-6" /> : <Briefcase className="w-6 h-6" />}
+            </div>
+
+            <h2 className="text-lg sm:text-xl font-extrabold tracking-tight text-gray-900 dark:text-white mb-1.5">
+              {isTechnical ? "Technical" : "Non-Technical"} Modules In Preparation
+            </h2>
+
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 leading-relaxed mb-4 max-w-lg mx-auto">
+              Our specialized infrastructure engineering teams and operational governance specialists are
+              curating and validating comprehensive, field-tested interactive presentations for this category.
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-xl mx-auto mb-5 text-left">
+              <div className="p-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200/70 dark:border-white/10">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                  <span className="text-xs font-bold text-gray-800 dark:text-gray-200">Field Validated</span>
+                </div>
+                <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-normal">
+                  Site inspection audits
+                </p>
+              </div>
+
+              <div className="p-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200/70 dark:border-white/10">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
+                  <span className="text-xs font-bold text-gray-800 dark:text-gray-200">SOP Standards</span>
+                </div>
+                <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-normal">
+                  Industry governance
+                </p>
+              </div>
+
+              <div className="p-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200/70 dark:border-white/10">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
+                  <span className="text-xs font-bold text-gray-800 dark:text-gray-200">Upcoming Release</span>
+                </div>
+                <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-normal">
+                  In next rollout
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={onBack}
+                className="w-full sm:w-auto px-4 py-2 rounded-xl font-bold text-xs sm:text-sm text-gray-700 dark:text-gray-200 bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 border border-gray-300/80 dark:border-white/15 transition-all hover:scale-[1.02] active:scale-95 cursor-pointer shadow-sm"
+              >
+                ← Back to Categories
+              </button>
+
+              {isTechnical ? (
+                <button
+                  type="button"
+                  onClick={() => onSwitchCategory("non-technical")}
+                  className="w-full sm:w-auto px-4 py-2 rounded-xl font-bold text-xs sm:text-sm text-white bg-gradient-to-r from-emerald-500 to-teal-500 hover:opacity-95 shadow-md shadow-emerald-500/20 transition-all hover:scale-[1.02] active:scale-95 cursor-pointer"
+                >
+                  Explore Non-Technical Modules →
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => onSwitchCategory("technical")}
+                  className="w-full sm:w-auto px-4 py-2 rounded-xl font-bold text-xs sm:text-sm text-white bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 hover:opacity-95 shadow-md shadow-orange-500/20 transition-all hover:scale-[1.02] active:scale-95 cursor-pointer"
+                >
+                  Explore Technical Modules →
+                </button>
+              )}
+            </div>
+          </motion.div>
+          */}
+
+          {/* Strategic Access Authorization Cover-Up Modal Card */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
+          initial={{ opacity: 0, scale: 0.96, y: 8 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 0.3 }}
-          className="max-w-2xl mx-auto my-auto p-6 sm:p-7 rounded-3xl bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl border border-gray-200/90 dark:border-white/10 shadow-xl text-center"
+          className="max-w-lg mx-auto my-auto p-6 sm:p-8 rounded-3xl bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl border border-amber-500/20 dark:border-amber-500/30 shadow-2xl text-center relative overflow-hidden"
         >
-          {/* Animated Status Pill */}
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 mb-3 shadow-sm">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>Modules Under Active Development</span>
+          {/* Subtle Ambient Decorative Glows */}
+          <div className="absolute -top-12 -right-12 w-28 h-28 bg-amber-500/10 dark:bg-amber-500/15 rounded-full blur-2xl pointer-events-none" />
+          <div className="absolute -bottom-12 -left-12 w-28 h-28 bg-orange-500/10 dark:bg-orange-500/15 rounded-full blur-2xl pointer-events-none" />
+
+          {/* Authorization Status Badge */}
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/30 mb-4 shadow-sm">
+            <Lock className="w-3.5 h-3.5 text-amber-500" />
+            <span>Authorization Required</span>
           </div>
 
-          {/* Icon Halo */}
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500/20 via-teal-500/15 to-transparent text-emerald-500 mx-auto flex items-center justify-center mb-3 border border-emerald-500/30 shadow-md shadow-emerald-500/15">
-            {isTechnical ? <Cpu className="w-6 h-6" /> : <Briefcase className="w-6 h-6" />}
+          {/* Secure Shield Icon Halo */}
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500/20 via-orange-500/15 to-transparent text-amber-500 mx-auto flex items-center justify-center mb-4 border border-amber-500/30 shadow-lg shadow-amber-500/15">
+            <ShieldAlert className="w-7 h-7" />
           </div>
 
-          <h2 className="text-lg sm:text-xl font-extrabold tracking-tight text-gray-900 dark:text-white mb-1.5">
-            {isTechnical ? "Technical" : "Non-Technical"} Modules In Preparation
+          {/* Clear, Authoritative Heading */}
+          <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white mb-2">
+            Access Restricted
           </h2>
 
-          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 leading-relaxed mb-4 max-w-lg mx-auto">
-            Our specialized infrastructure engineering teams and operational governance specialists are
-            curating and validating comprehensive, field-tested interactive presentations for this category.
+          {/* User Requested Phrasing: You don't have authority to view this page & kindly please connect with us */}
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 leading-relaxed mb-6 max-w-md mx-auto">
+            You do not have the authority to view this page. Kindly connect with us to request viewing access.
           </p>
 
-          {/* Spacious Enterprise Quality Assurance & Pipeline Highlights */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-xl mx-auto mb-5 text-left">
-            <div className="p-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200/70 dark:border-white/10">
-              <div className="flex items-center gap-1.5 mb-1">
-                <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                <span className="text-xs font-bold text-gray-800 dark:text-gray-200">Field Validated</span>
-              </div>
-              <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-normal">
-                Site inspection audits
-              </p>
-            </div>
-
-            <div className="p-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200/70 dark:border-white/10">
-              <div className="flex items-center gap-1.5 mb-1">
-                <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
-                <span className="text-xs font-bold text-gray-800 dark:text-gray-200">SOP Standards</span>
-              </div>
-              <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-normal">
-                Industry governance
-              </p>
-            </div>
-
-            <div className="p-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200/70 dark:border-white/10">
-              <div className="flex items-center gap-1.5 mb-1">
-                <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
-                <span className="text-xs font-bold text-gray-800 dark:text-gray-200">Upcoming Release</span>
-              </div>
-              <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-normal">
-                In next rollout
-              </p>
-            </div>
-          </div>
-
-          {/* Action CTAs: Spacious, professional and clean without any ID leaks */}
+          {/* Action Buttons: Connect with us (primary) & Back to Categories (secondary) */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <button
               type="button"
               onClick={onBack}
-              className="w-full sm:w-auto px-4 py-2 rounded-xl font-bold text-xs sm:text-sm text-gray-700 dark:text-gray-200 bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 border border-gray-300/80 dark:border-white/15 transition-all hover:scale-[1.02] active:scale-95 cursor-pointer shadow-sm"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm text-gray-700 dark:text-gray-200 bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 border border-gray-300/80 dark:border-white/15 transition-all duration-200 hover:scale-[1.02] active:scale-95 cursor-pointer shadow-sm"
             >
-              ← Back to Categories
+              <ArrowLeft className="w-3.5 h-3.5 text-amber-500" />
+              <span>Back to Categories</span>
             </button>
 
-            {isTechnical ? (
-              <button
-                type="button"
-                onClick={() => onSwitchCategory("non-technical")}
-                className="w-full sm:w-auto px-4 py-2 rounded-xl font-bold text-xs sm:text-sm text-white bg-gradient-to-r from-emerald-500 to-teal-500 hover:opacity-95 shadow-md shadow-emerald-500/20 transition-all hover:scale-[1.02] active:scale-95 cursor-pointer"
-              >
-                Explore Non-Technical Modules →
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => onSwitchCategory("technical")}
-                className="w-full sm:w-auto px-4 py-2 rounded-xl font-bold text-xs sm:text-sm text-white bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 hover:opacity-95 shadow-md shadow-orange-500/20 transition-all hover:scale-[1.02] active:scale-95 cursor-pointer"
-              >
-                Explore Technical Modules →
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => setIsConnectModalOpen(true)}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm text-white bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-600 shadow-md shadow-orange-500/25 transition-all duration-200 hover:scale-[1.02] active:scale-95 cursor-pointer"
+            >
+              <span>Connect with us</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
           </div>
         </motion.div>
-      )}
+      </>
+    )}
+
+      {/* Connect with Us Popup Modal */}
+      <ConnectModal
+        isOpen={isConnectModalOpen}
+        onClose={() => setIsConnectModalOpen(false)}
+      />
     </div>
   );
 };
