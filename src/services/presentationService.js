@@ -42,3 +42,15 @@ export const getActivePresentationIds = async () => {
     method: "GET",
   });
 };
+
+/**
+ * Fetch active presentation category cards
+ * GET /server/presentation/cards?type=1 (or 2)
+ * @param {number|string} type - 1 for Technical, 2 for Non-Technical
+ * @returns {Promise<Object>} { cards: Array, count: number }
+ */
+export const getCategoryCards = async (type = 1) => {
+  return request(`/presentation/cards?type=${encodeURIComponent(type)}`, {
+    method: "GET",
+  });
+};

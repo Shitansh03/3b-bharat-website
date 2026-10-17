@@ -46,7 +46,10 @@ const Videos = lazy(() => import("./components/videos/Videos"));
 const PaymentGateway = lazy(() => import("./components/payment/PaymentGateway"));
 const PurchaseDashboard = lazy(() => import("./components/PurchaseDashboard"));
 const EduLoginPage = lazy(() => import("./components/EduLoginPage"));
+{/* Previous direct Methodology import preserved per zero-deletions rule:
 const Methodology = lazy(() => import("./components/Methodology"));
+*/}
+const OurApproachShowcase = lazy(() => import("./components/OurApproachShowcase"));
 const VisualizationPage = lazy(() => import("./components/VisualizationPage"));
 const Openings = lazy(() => import("./components/Openings"));
 
@@ -141,6 +144,7 @@ const AppContent = () => {
         <main id="main-content" >
           <Routes>
             <Route path="/" element={<HomePage />} />
+            {/* Previous direct Methodology routes preserved per zero-deletions rule:
             <Route
               path="/methodology"
               element={
@@ -154,6 +158,23 @@ const AppContent = () => {
               element={
                 <Suspense fallback={<PageLoader />}>
                   <Methodology />
+                </Suspense>
+              }
+            />
+            */}
+            <Route
+              path="/methodology"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <OurApproachShowcase />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/our-approach"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <OurApproachShowcase />
                 </Suspense>
               }
             />

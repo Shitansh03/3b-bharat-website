@@ -473,12 +473,20 @@ export const IMAGE_PAUSE_TIMES = {
 // 1 minute (60s) pause timer for all image slides
 export const PAUSE_TIMER_SECONDS = 60;
 
+{/* Previous Methodology definition without props preserved per zero-deletions rule:
 const Methodology = () => {
   const navigate = useNavigate();
   const { openModal: openLoginModal } = useLoginModal();
   const { isAuthenticated, user } = useAuth();
   const [searchParams] = useSearchParams();
   const targetPptId = searchParams.get("ppt") || searchParams.get("wph_id") || 1;
+*/}
+const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel = null }) => {
+  const navigate = useNavigate();
+  const { openModal: openLoginModal } = useLoginModal();
+  const { isAuthenticated, user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const targetPptId = pptIdProp || searchParams.get("ppt") || searchParams.get("wph_id") || 1;
   const initialSlideParam = searchParams.get("slide");
   {/* Previous 9 max limit preserved per zero-deletions rule:
   const parsedInitialIndex = initialSlideParam !== null && !isNaN(Number(initialSlideParam))
@@ -498,6 +506,40 @@ const Methodology = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   */}
   const [currentIndex, setCurrentIndex] = useState(parsedInitialIndex);
+
+  // Intelligent back navigation:
+  // If ppt was opened from Our Approach (technical or non-technical), returns to that category's cards view.
+  // If ppt was opened from Openings module, returns to the Openings cards view.
+  const handleBackNavigation = useCallback((e) => {
+    if (e) e.stopPropagation();
+
+    // 1. If explicit onBack prop provided (e.g. from OurApproachShowcase), invoke it
+    if (typeof onBack === "function") {
+      onBack();
+      return;
+    }
+
+    // 2. If category param is present in URL, return to that category's card view
+    const categoryParam = searchParams.get("category");
+    if (categoryParam) {
+      navigate(`/our-approach?category=${categoryParam}`);
+      return;
+    }
+
+    // 3. If from=openings is in URL, return to /openings
+    const fromParam = searchParams.get("from");
+    if (fromParam === "openings") {
+      navigate("/openings");
+      return;
+    }
+
+    // 4. Default fallback: go back in history if possible, else /openings
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate("/openings");
+    }
+  }, [onBack, searchParams, navigate]);
 
   // Dynamic presentation data state
   const [slides, setSlides] = useState(SLIDES_DATA);
@@ -1329,6 +1371,7 @@ const Methodology = () => {
 
   // Download currently displayed slide image
   const [isDownloading, setIsDownloading] = useState(false);
+  {/* Previous handleDownloadImage without proxy preserved per zero-deletions rule:
   const handleDownloadImage = useCallback(async (e) => {
     if (e) e.stopPropagation();
     const imageSrc = currentSlide?.image_location || currentSlide?.location;
@@ -1356,6 +1399,60 @@ const Methodology = () => {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+    } finally {
+      setTimeout(() => setIsDownloading(false), 800);
+    }
+  }, [currentSlide, currentIndex]);
+  */}
+  const handleDownloadImage = useCallback(async (e) => {
+    if (e) e.stopPropagation();
+    const imageSrc = currentSlide?.image_location || currentSlide?.location;
+    if (!imageSrc) return;
+
+    try {
+      setIsDownloading(true);
+      const fileName = imageSrc.split("/").pop().split("?")[0] || `slide_${currentIndex + 1}.jpg`;
+
+      // Use backend proxy endpoint to avoid CORS restrictions and force real download
+      const proxyDownloadUrl = `http://localhost:3000/server/presentation/download-proxy?url=${encodeURIComponent(imageSrc)}`;
+      
+      let blob;
+      try {
+        const response = await fetch(proxyDownloadUrl);
+        if (response.ok) {
+          blob = await response.blob();
+        } else {
+          // Direct fallback attempt
+          const directRes = await fetch(imageSrc);
+          if (directRes.ok) blob = await directRes.blob();
+        }
+      } catch (fetchErr) {
+        console.warn("Proxy fetch error, falling back to direct download anchor:", fetchErr);
+      }
+
+      if (blob) {
+        const blobUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = blobUrl;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(blobUrl);
+      } else {
+        // Fallback: trigger download via proxy URL directly in a temporary iframe to avoid opening in current tab
+        const iframe = document.createElement("iframe");
+        iframe.style.display = "none";
+        iframe.src = proxyDownloadUrl;
+        document.body.appendChild(iframe);
+        setTimeout(() => {
+          if (document.body.contains(iframe)) {
+            document.body.removeChild(iframe);
+          }
+        }, 5000);
+      }
+    } catch (err) {
+      console.error("Download failed:", err);
     } finally {
       setTimeout(() => setIsDownloading(false), 800);
     }
@@ -2998,6 +3095,49 @@ const Methodology = () => {
         <div className="w-full shrink-0 mb-1.5">
           <div className="w-full flex items-center justify-between gap-2 bg-white/85 dark:bg-neutral-900/85 backdrop-blur-xl border border-gray-200 dark:border-white/10 py-1.5 px-3 sm:px-4 rounded-xl shadow-sm">
             <div className="flex items-center gap-2">
+              {/* Optional onBack button to return to domain cards / categories */}
+              {/* Previous onBack button with ArrowLeft icon preserved per zero-deletions rule:
+              {onBack && (
+                <button
+                  type="button"
+                  onClick={onBack}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold text-gray-700 dark:text-gray-200 bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 border border-gray-300/80 dark:border-white/15 transition-all duration-200 hover:scale-[1.02] active:scale-95 cursor-pointer mr-0.5 shrink-0"
+                  title={backButtonLabel || "Back to Modules"}
+                  aria-label={backButtonLabel || "Back to Modules"}
+                >
+                  <ArrowLeft className="w-3.5 h-3.5 text-amber-500" />
+                  <span className="hidden sm:inline">{backButtonLabel || "Back"}</span>
+                  <span className="sm:hidden">Back</span>
+                </button>
+              )}
+              */}
+              {/* Previous onBack button without icon preserved per zero-deletions rule:
+              {onBack && (
+                <button
+                  type="button"
+                  onClick={onBack}
+                  className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-bold text-gray-700 dark:text-gray-200 bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 border border-gray-300/80 dark:border-white/15 transition-all duration-200 hover:scale-[1.02] active:scale-95 cursor-pointer mr-0.5 shrink-0"
+                  title={backButtonLabel || "Back"}
+                  aria-label={backButtonLabel || "Back"}
+                >
+                  <span className="hidden sm:inline">{backButtonLabel || "Back"}</span>
+                  <span className="sm:hidden">Back</span>
+                </button>
+              )}
+              */}
+              {onBack && (
+                <button
+                  type="button"
+                  onClick={onBack}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-gray-700 dark:text-gray-200 bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 border border-gray-300/80 dark:border-white/15 transition-all duration-200 hover:scale-[1.02] active:scale-95 cursor-pointer mr-0.5 shrink-0"
+                  title={backButtonLabel || "Back"}
+                  aria-label={backButtonLabel || "Back"}
+                >
+                  <ArrowLeft className="w-3.5 h-3.5 text-amber-500" />
+                  <span className="hidden sm:inline">{backButtonLabel || "Back"}</span>
+                  <span className="sm:hidden">Back</span>
+                </button>
+              )}
               <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-orange-500 to-emerald-500 flex items-center justify-center text-white shadow-sm shadow-orange-500/20 shrink-0">
                 <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </div>
@@ -4075,7 +4215,7 @@ const Methodology = () => {
           </button>
           */}
 
-          {/* Top-Left Back Arrow Button (Redirects back to Openings module) - Only shown in normal view screen */}
+          {/* Previous unconditional navigate("/openings") back button preserved per zero-deletions rule:
           {!isFullScreen && (
             <button
               type="button"
@@ -4086,6 +4226,24 @@ const Methodology = () => {
               className="absolute top-3 left-3 sm:top-4 sm:left-4 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-black/60 hover:bg-black/90 text-white border border-white/20 hover:border-amber-400/80 shadow-xl backdrop-blur-md flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95 z-20 group cursor-pointer"
               title="Back to Openings"
               aria-label="Back to Openings"
+            >
+              <ArrowLeft className="w-5 h-5 text-gray-200 group-hover:text-amber-400 group-hover:-translate-x-0.5 transition-all" />
+            </button>
+          )}
+          */}
+
+          {/* Top-Left Back Arrow Button (Intelligently returns to Our Approach Technical/Non-Technical cards or Openings) */}
+          {!isFullScreen && (
+            <button
+              type="button"
+              onClick={handleBackNavigation}
+              className="absolute top-3 left-3 sm:top-4 sm:left-4 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-black/60 hover:bg-black/90 text-white border border-white/20 hover:border-amber-400/80 shadow-xl backdrop-blur-md flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95 z-20 group cursor-pointer"
+              title={
+                searchParams.get("category")
+                  ? `Back to ${searchParams.get("category") === "technical" ? "Technical" : "Non-Technical"} Modules`
+                  : "Back"
+              }
+              aria-label="Back"
             >
               <ArrowLeft className="w-5 h-5 text-gray-200 group-hover:text-amber-400 group-hover:-translate-x-0.5 transition-all" />
             </button>

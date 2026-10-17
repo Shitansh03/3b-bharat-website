@@ -176,10 +176,18 @@ const Openings = () => {
     }
   };
   */}
+  {/* Previous handleCardClick without from=openings parameter preserved per zero-deletions rule:
   const handleCardClick = (opening) => {
     const isClickable = activePptIds.includes(opening.pptId);
     if (isClickable) {
       navigate(`/our-approach?ppt=${opening.pptId}&slide=1`);
+    }
+  };
+  */}
+  const handleCardClick = (opening) => {
+    const isClickable = activePptIds.includes(opening.pptId);
+    if (isClickable) {
+      navigate(`/our-approach?ppt=${opening.pptId}&slide=1&from=openings`);
     }
   };
 
