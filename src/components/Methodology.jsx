@@ -34,6 +34,7 @@ import { useLoginModal } from "../context/LoginModalContext";
 import { useAuth } from "../context/AuthContext";
 import { useSearchParams, useLocation, useNavigate } from "react-router-dom";
 import ConnectModal from "./ConnectModal";
+import Hls from "hls.js";
 {/* Previous backend service import preserved per zero-deletions rule:
 import { getActivePresentation } from "../services/presentationService";
 */}
@@ -614,6 +615,9 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
 
   const slideshowRef = useRef(null);
   const videoRef = useRef(null);
+  // Active HLS instance reference
+  const hlsRef = useRef(null);
+  const loadedVideoSrcRef = useRef(null);
   const audioRef = useRef(null);
   const audioContextRef = useRef(null);
   const audioSourceMapRef = useRef(new WeakMap());
@@ -698,6 +702,121 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
     }
     setShowSpeedMenu(false);
   }, []);
+
+  // HLS Controller Hook / Effect: Adaptive Video Streaming with hls.js & Native MP4 Fallback
+  useEffect(() => {
+    const isVideoSlide = currentSlide?.type === 2 || currentSlide?.slide_type === 2;
+    const videoElement = videoRef.current;
+    if (!isVideoSlide || !videoElement) {
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+      loadedVideoSrcRef.current = null;
+      return;
+    }
+
+    const videoSrc = currentSlide?.hls_location || currentSlide?.location;
+    const fallbackSrc = currentSlide?.fallback_location || currentSlide?.video_location || currentSlide?.location;
+    const isHls = Boolean(videoSrc && (videoSrc.includes(".m3u8") || videoSrc.includes("/hls/")));
+
+    // If already loaded for this exact video source, only sync play/pause state
+    if (loadedVideoSrcRef.current === videoSrc) {
+      if (isPaused) {
+        videoElement.pause();
+      } else {
+        videoElement.play().catch((e) => console.warn("Video play prevented:", e));
+      }
+      return;
+    }
+
+    // Clean up any previous HLS instance
+    if (hlsRef.current) {
+      hlsRef.current.destroy();
+      hlsRef.current = null;
+    }
+
+    loadedVideoSrcRef.current = videoSrc;
+
+    if (isHls && Hls.isSupported()) {
+      const hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: true,
+        backBufferLength: 30,
+        maxBufferLength: 30, // 30 seconds buffer ahead
+        maxMaxBufferLength: 60,
+      });
+      hlsRef.current = hls;
+      hls.loadSource(videoSrc);
+      hls.attachMedia(videoElement);
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        if (!isPaused) {
+          videoElement.play().catch((e) => console.warn("HLS autoplay prevented:", e));
+        }
+      });
+      hls.on(Hls.Events.ERROR, (event, data) => {
+        if (data.fatal) {
+          console.warn("[HLS Player] Fatal error encountered, falling back to MP4:", data);
+          hls.destroy();
+          hlsRef.current = null;
+          videoElement.src = fallbackSrc;
+          if (!isPaused) videoElement.play().catch(() => {});
+        }
+      });
+    } else if (videoElement.canPlayType("application/vnd.apple.mpegurl") && isHls) {
+      // Native HLS support (Safari iOS / macOS)
+      videoElement.src = videoSrc;
+      if (!isPaused) {
+        videoElement.play().catch((e) => console.warn("Native HLS autoplay prevented:", e));
+      }
+    } else {
+      // Native MP4 fallback
+      videoElement.src = fallbackSrc || videoSrc;
+      if (!isPaused) {
+        videoElement.play().catch((e) => console.warn("MP4 autoplay prevented:", e));
+      }
+    }
+
+    return () => {
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+      loadedVideoSrcRef.current = null;
+    };
+  }, [currentIndex, currentSlide, isPaused]);
+
+  // Background Look-Ahead Pre-Bufferer: preloads upcoming video HLS chunks while on earlier slides
+  useEffect(() => {
+    if (!slides || slides.length === 0) return;
+    // Look ahead to find the next video slide
+    const upcomingVideoSlides = slides.filter(
+      (s, idx) => idx > currentIndex && (s.type === 2 || s.slide_type === 2)
+    );
+    if (upcomingVideoSlides.length === 0) return;
+
+    const nextVideo = upcomingVideoSlides[0];
+    const playlistUrl = nextVideo.hls_location || (nextVideo.location?.includes(".m3u8") ? nextVideo.location : null);
+    if (!playlistUrl) return;
+
+    // Silently pre-fetch playlist and the first 2 chunk segments into browser cache
+    fetch(playlistUrl)
+      .then((res) => (res.ok ? res.text() : null))
+      .then((m3u8Text) => {
+        if (!m3u8Text) return;
+        // Extract segment filenames (.ts)
+        const segments = m3u8Text
+          .split("\n")
+          .filter((line) => line.trim().endsWith(".ts"))
+          .slice(0, 2); // Preload first 2 chunks (4 seconds)
+        const baseUrl = playlistUrl.substring(0, playlistUrl.lastIndexOf("/") + 1);
+        segments.forEach((seg) => {
+          const segUrl = seg.startsWith("http") ? seg : baseUrl + seg;
+          fetch(segUrl, { cache: "force-cache" }).catch(() => {});
+        });
+      })
+      .catch(() => {});
+  }, [currentIndex, slides]);
 
   // Dedicated Image Slide Audio Player States
   const [audioCurrentTime, setAudioCurrentTime] = useState(0);
@@ -2887,7 +3006,7 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0.95, y: 20 }}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-md bg-white dark:bg-neutral-900 border border-gray-200 dark:border-white/15 rounded-2xl shadow-2xl p-5 space-y-4 pointer-events-auto"
+            className="w-full max-w-lg max-h-[90vh] overflow-y-auto bg-white dark:bg-neutral-900 border border-gray-200 dark:border-white/15 rounded-2xl shadow-2xl p-5 space-y-4 pointer-events-auto"
           >
             {/* Header */}
             <div className="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-white/10">
@@ -2954,17 +3073,21 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
             )}
 
             {/* Diagnostics Table */}
-            <div className="space-y-2 text-xs">
-              <div className="flex justify-between py-1.5 px-3 rounded-lg bg-gray-50 dark:bg-white/5">
-                <span className="text-gray-500 dark:text-gray-400 font-medium">Slide Title</span>
-                <span className="font-bold text-gray-800 dark:text-white">{currentSlide.title}</span>
+            <div className="space-y-2.5 text-xs">
+              <div className="flex justify-between items-center py-1.5 px-3 rounded-lg bg-gray-50 dark:bg-white/5">
+                <span className="text-gray-500 dark:text-gray-400 font-medium shrink-0">Slide Title</span>
+                <span className="font-bold text-gray-800 dark:text-white truncate ml-2 text-right">
+                  {currentSlide.title || "—"}
+                </span>
               </div>
-              <div className="flex justify-between py-1.5 px-3 rounded-lg bg-gray-50 dark:bg-white/5">
-                <span className="text-gray-500 dark:text-gray-400 font-medium">Media Type</span>
+              <div className="flex justify-between items-center py-1.5 px-3 rounded-lg bg-gray-50 dark:bg-white/5">
+                <span className="text-gray-500 dark:text-gray-400 font-medium shrink-0">Media Type</span>
                 <span className="font-bold text-gray-800 dark:text-white">
                   {currentSlide.type === 1 ? "Image (Type 1)" : "Video (Type 2)"}
                 </span>
               </div>
+
+              {/* PRESERVED: Previous single-line truncated File Location and colliding Audio Path preserved per zero-deletions rule:
               <div className="flex justify-between py-1.5 px-3 rounded-lg bg-gray-50 dark:bg-white/5">
                 <span className="text-gray-500 dark:text-gray-400 font-medium">File Location</span>
                 <span className="font-mono text-[10px] text-amber-600 dark:text-amber-400 truncate max-w-[200px]" title={currentSlide.location}>
@@ -2977,14 +3100,56 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
                   {currentSlide.audio_location || "None (Static)"}
                 </span>
               </div>
-              <div className="flex justify-between py-1.5 px-3 rounded-lg bg-gray-50 dark:bg-white/5">
-                <span className="text-gray-500 dark:text-gray-400 font-medium">Ideal Duration</span>
+              */}
+
+              {/* File Location - Clear dedicated box with complete URL and wrap/break */}
+              <div className="py-2 px-3 rounded-lg bg-gray-50 dark:bg-white/5 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500 dark:text-gray-400 font-medium">File Location</span>
+                  {currentSlide.location && (
+                    <span className="text-[10px] font-mono font-bold text-amber-600 dark:text-amber-400">
+                      {currentSlide.location.split("/").pop()}
+                    </span>
+                  )}
+                </div>
+                <div
+                  className="font-mono text-[10px] text-amber-600 dark:text-amber-400 bg-amber-500/5 dark:bg-amber-500/10 p-2 rounded-lg border border-amber-500/20 break-all select-all leading-relaxed"
+                  title={currentSlide.location}
+                >
+                  {currentSlide.location || "None"}
+                </div>
+              </div>
+
+              {/* Audio Location - Clear dedicated box with complete URL, no text collision */}
+              <div className="py-2 px-3 rounded-lg bg-gray-50 dark:bg-white/5 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500 dark:text-gray-400 font-medium">Audio Location</span>
+                  {currentSlide.audio_location && (
+                    <span className="text-[10px] font-mono font-bold text-sky-600 dark:text-sky-400">
+                      {currentSlide.audio_location.split("/").pop()}
+                    </span>
+                  )}
+                </div>
+                <div
+                  className={`font-mono text-[10px] p-2 rounded-lg border break-all select-all leading-relaxed ${
+                    currentSlide.audio_location
+                      ? "text-sky-600 dark:text-sky-400 bg-sky-500/5 dark:bg-sky-500/10 border-sky-500/20"
+                      : "text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-white/5 border-gray-200 dark:border-white/10"
+                  }`}
+                  title={currentSlide.audio_location || "None (Static)"}
+                >
+                  {currentSlide.audio_location || "None (Static)"}
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center py-1.5 px-3 rounded-lg bg-gray-50 dark:bg-white/5">
+                <span className="text-gray-500 dark:text-gray-400 font-medium shrink-0">Ideal Duration</span>
                 <span className="font-bold text-gray-800 dark:text-white">
                   {currentSlide.ideal_time || currentSlide.video_duration || 30}s
                 </span>
               </div>
-              <div className="flex justify-between py-1.5 px-3 rounded-lg bg-gray-50 dark:bg-white/5">
-                <span className="text-gray-500 dark:text-gray-400 font-medium">Sound Output</span>
+              <div className="flex justify-between items-center py-1.5 px-3 rounded-lg bg-gray-50 dark:bg-white/5">
+                <span className="text-gray-500 dark:text-gray-400 font-medium shrink-0">Sound Output</span>
                 <span className={`font-bold ${isMuted ? "text-red-500" : "text-emerald-500"}`}>
                   {isMuted ? "Globally Muted" : "Active / Unmuted"}
                 </span>
@@ -3597,10 +3762,60 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
                     }
                   }}
                   */}
+                  {/* Previous direct src={currentSlide.location} preserved per zero-deletions rule:
                   <video
                     ref={videoRef}
                     key={currentSlide.location}
                     src={currentSlide.location}
+                    autoPlay
+                    playsInline
+                    muted={isMuted}
+                    onLoadedMetadata={(e) => {
+                      const dur = e.currentTarget.duration;
+                      if (dur && !isNaN(dur) && isFinite(dur)) {
+                        setVideoDuration(dur);
+                        setTimeLeft(Math.ceil(dur));
+                      }
+                    }}
+                    onTimeUpdate={(e) => {
+                      if (!isScrubbing) {
+                        const cur = e.currentTarget.currentTime;
+                        setVideoCurrentTime(cur);
+                        const dur = e.currentTarget.duration || currentSlide.video_duration || 30;
+                        setVideoDuration(dur);
+                        const remaining = Math.max(0, Math.ceil(dur - cur));
+                        if (!isNaN(remaining) && !showCompletionModal && !isPaused) {
+                          setTimeLeft(remaining);
+                        }
+                      }
+                      try {
+                        const b = e.currentTarget.buffered;
+                        if (b && b.length > 0) {
+                          setVideoBuffered(b.end(b.length - 1));
+                        }
+                      } catch (err) { }
+                    }}
+                    onEnded={() => {
+                      setTimeLeft(0);
+                      if (currentIndex < activeSlides.length - 1) {
+                        goToSlide(currentIndex + 1);
+                      } else {
+                        setIsPaused(true);
+                        // Check presentationHeader.connect_with_us_popus (1 = yes [open ConnectModal at end of last slide], 2 = no [show completion modal])
+                        if (Number(presentationHeader?.connect_with_us_popus) === 1) {
+                          setIsConnectModalOpen(true);
+                        } else {
+                          setShowCompletionModal(true);
+                        }
+                      }
+                    }}
+                    onClick={handleTogglePlayPause}
+                    className="max-w-full max-h-full w-auto h-auto object-contain rounded-lg shadow-2xl cursor-pointer"
+                  />
+                  */}
+                  <video
+                    ref={videoRef}
+                    key={currentSlide.hls_location || currentSlide.location}
                     autoPlay
                     playsInline
                     muted={isMuted}
