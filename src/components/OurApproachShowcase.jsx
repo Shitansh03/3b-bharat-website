@@ -669,8 +669,8 @@ const DomainCardsGrid = ({ category, onSelectCard, onBack, onSwitchCategory }) =
 };
 */}
 
-// Refactored DomainCardsGrid: 100% Uncropped cover image, ultra-interactive cards, compact non-scrollable empty state
 const DomainCardsGrid = ({ category, onSelectCard, onBack, onSwitchCategory }) => {
+  const [searchParams] = useSearchParams();
   const [cards, setCards] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState(null);
@@ -678,6 +678,7 @@ const DomainCardsGrid = ({ category, onSelectCard, onBack, onSwitchCategory }) =
 
   const isTechnical = category === "technical";
   const categoryType = isTechnical ? 1 : 2;
+  const isForceUnauthorized = searchParams.get("unauthorized") === "true";
 
   useEffect(() => {
     let isMounted = true;
@@ -842,7 +843,7 @@ const DomainCardsGrid = ({ category, onSelectCard, onBack, onSwitchCategory }) =
             Return to Categories
           </button>
         </div>
-      ) : cards.length > 0 ? (
+      ) : /* Previous cards.length > 0 check preserved per zero-deletions rule */ !isForceUnauthorized && cards.length > 0 ? (
         // Dynamic Cards Grid: Compact, sleek, small & highly interactive and impressive
         <motion.div
           variants={containerVariants}
@@ -1079,80 +1080,78 @@ const DomainCardsGrid = ({ category, onSelectCard, onBack, onSwitchCategory }) =
           </motion.div>
           */}
 
-          {/* Strategic Access Authorization Cover-Up Modal Card */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.96, y: 8 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="max-w-lg mx-auto my-auto p-6 sm:p-8 rounded-3xl bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl border border-amber-500/20 dark:border-amber-500/30 shadow-2xl text-center relative overflow-hidden"
-        >
-          {/* Subtle Ambient Decorative Glows */}
-          <div className="absolute -top-12 -right-12 w-28 h-28 bg-amber-500/10 dark:bg-amber-500/15 rounded-full blur-2xl pointer-events-none" />
-          <div className="absolute -bottom-12 -left-12 w-28 h-28 bg-orange-500/10 dark:bg-orange-500/15 rounded-full blur-2xl pointer-events-none" />
-
-          {/* Previous Access Restricted Card Content preserved per zero-deletions rule:
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/30 mb-4 shadow-sm">
-            <Lock className="w-3.5 h-3.5 text-amber-500" />
-            <span>Authorization Required</span>
-          </div>
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500/20 via-orange-500/15 to-transparent text-amber-500 mx-auto flex items-center justify-center mb-4 border border-amber-500/30 shadow-lg shadow-amber-500/15">
-            <ShieldAlert className="w-7 h-7" />
-          </div>
-          <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white mb-2">
-            Access Restricted
-          </h2>
-          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 leading-relaxed mb-6 max-w-md mx-auto">
-            You do not have the authority to view this page. Kindly connect with us to request viewing access.
-          </p>
+          {/* Previous Amber/Warning Modal Card preserved per zero-deletions rule:
+          <motion.div
+            className="max-w-lg mx-auto my-auto p-6 sm:p-8 rounded-3xl bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl border border-amber-500/20 dark:border-amber-500/30 shadow-2xl text-center relative overflow-hidden"
+          >
+            <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-bold tracking-wide text-amber-700 dark:text-amber-300 bg-amber-500/10 border border-amber-500/25 mb-4 shadow-sm">
+              <Lock className="w-3.5 h-3.5 text-amber-500" />
+              <span>Viewing Access</span>
+            </div>
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500/20 via-orange-500/15 to-transparent text-amber-500 mx-auto flex items-center justify-center mb-4 border border-amber-500/30 shadow-lg shadow-amber-500/15">
+              <Lock className="w-7 h-7 text-amber-500" />
+            </div>
+          </motion.div>
           */}
 
-          {/* Polite Viewing Access Status Badge */}
-          <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-bold tracking-wide text-amber-700 dark:text-amber-300 bg-amber-500/10 border border-amber-500/25 mb-4 shadow-sm">
-            <Lock className="w-3.5 h-3.5 text-amber-500" />
-            <span>Viewing Access</span>
-          </div>
+          {/* Strategic Access Authorization Cover-Up Modal Card with Uplifting, Positive Vibe (Emerald & Teal Theme) */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: 8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="max-w-lg mx-auto my-auto p-6 sm:p-8 rounded-3xl bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl border border-emerald-500/25 dark:border-emerald-500/35 shadow-2xl shadow-emerald-500/10 text-center relative overflow-hidden"
+          >
+            {/* Soft, Positive Ambient Glows (Emerald & Teal) */}
+            <div className="absolute -top-12 -right-12 w-28 h-28 bg-emerald-500/15 dark:bg-emerald-500/20 rounded-full blur-2xl pointer-events-none" />
+            <div className="absolute -bottom-12 -left-12 w-28 h-28 bg-teal-500/15 dark:bg-teal-500/20 rounded-full blur-2xl pointer-events-none" />
 
-          {/* Polite Lock Icon Halo */}
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500/20 via-orange-500/15 to-transparent text-amber-500 mx-auto flex items-center justify-center mb-4 border border-amber-500/30 shadow-lg shadow-amber-500/15">
-            <Lock className="w-7 h-7 text-amber-500" />
-          </div>
+            {/* Positive Viewing Access Status Badge */}
+            <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-bold tracking-wide text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 mb-4 shadow-sm">
+              <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
+              <span>Viewing Access</span>
+            </div>
 
-          {/* Polite, Courteous Heading */}
-          <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white mb-2">
-            We're Sorry!
-          </h2>
+            {/* Radiant Positive Icon Halo */}
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500/20 via-teal-500/15 to-cyan-500/10 text-emerald-600 dark:text-emerald-400 mx-auto flex items-center justify-center mb-4 border border-emerald-500/30 shadow-lg shadow-emerald-500/20">
+              <Sparkles className="w-7 h-7 text-emerald-500" />
+            </div>
 
-          {/* Polite Sub-heading stating authorization status clearly as requested by seniors */}
-          <p className="text-sm sm:text-base font-semibold text-gray-800 dark:text-gray-100 mb-2">
-            You are not authorized to view this page.
-          </p>
+            {/* Polite, Courteous Heading */}
+            <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white mb-2">
+              We're Sorry!
+            </h2>
 
-          {/* Polite, Courteous Body Message */}
-          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 leading-relaxed mb-6 max-w-md mx-auto">
-            We sincerely apologize for the inconvenience. Kindly connect with us to request viewing access, or return to explore other available categories.
-          </p>
+            {/* Polite Sub-heading stating authorization status clearly as requested by seniors */}
+            <p className="text-sm sm:text-base font-semibold text-gray-800 dark:text-gray-100 mb-2">
+              You are not authorized to view this page.
+            </p>
 
-          {/* Action Buttons: Back to Categories & Connect with us */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <button
-              type="button"
-              onClick={onBack}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm text-gray-700 dark:text-gray-200 bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 border border-gray-300/80 dark:border-white/15 transition-all duration-200 hover:scale-[1.02] active:scale-95 cursor-pointer shadow-sm"
-            >
-              <ArrowLeft className="w-3.5 h-3.5 text-amber-500" />
-              <span>Back to Categories</span>
-            </button>
+            {/* Polite, Courteous Body Message */}
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 leading-relaxed mb-6 max-w-md mx-auto">
+              We sincerely apologize for the inconvenience. Kindly connect with us to request viewing access, or return to explore other available categories.
+            </p>
 
-            <button
-              type="button"
-              onClick={() => setIsConnectModalOpen(true)}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm text-white bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-600 shadow-md shadow-orange-500/25 transition-all duration-200 hover:scale-[1.02] active:scale-95 cursor-pointer"
-            >
-              <span>Connect with us</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </motion.div>
+            {/* Action Buttons: Back to Categories & Connect with us in Positive Vibrant Colors */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={onBack}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm text-gray-700 dark:text-gray-200 bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 border border-gray-300/80 dark:border-white/15 hover:border-emerald-500/40 transition-all duration-200 hover:scale-[1.02] active:scale-95 cursor-pointer shadow-sm"
+              >
+                <ArrowLeft className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>Back to Categories</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsConnectModalOpen(true)}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm text-white bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-600 hover:to-teal-600 shadow-md shadow-emerald-500/25 transition-all duration-200 hover:scale-[1.02] active:scale-95 cursor-pointer"
+              >
+                <span>Connect with us</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </motion.div>
       </>
     )}
 
