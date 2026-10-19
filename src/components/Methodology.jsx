@@ -703,7 +703,7 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
     setShowSpeedMenu(false);
   }, []);
 
-  // HLS Controller Hook / Effect: Adaptive Video Streaming with hls.js & Native MP4 Fallback
+  {/* Previous HLS Controller Hook / Effect preserved per zero-deletions rule:
   useEffect(() => {
     const isVideoSlide = currentSlide?.type === 2 || currentSlide?.slide_type === 2;
     const videoElement = videoRef.current;
@@ -785,8 +785,164 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
       loadedVideoSrcRef.current = null;
     };
   }, [currentIndex, currentSlide, isPaused]);
+  */}
 
-  // Background Look-Ahead Pre-Bufferer: preloads upcoming video HLS chunks while on earlier slides
+  {/* Previous attachVideoSource without forcePlay preserved per zero-deletions rule:
+  const attachVideoSource = useCallback((videoElement, slide) => {
+    if (!videoElement || !slide) return;
+    const isVideoSlide = slide.type === 2 || slide.slide_type === 2;
+    if (!isVideoSlide) return;
+
+    const hlsSource = slide.hls_location || (slide.location?.includes(".m3u8") ? slide.location : null);
+    const fallbackSource = slide.fallback_location || slide.video_location || slide.location;
+    const targetSource = hlsSource || fallbackSource;
+
+    const safePlay = () => {
+      if (isPaused) return;
+      const playPromise = videoElement.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((err) => {
+          console.warn("[Video Player] Autoplay blocked, falling back to muted play:", err.message);
+          videoElement.muted = true;
+          setIsMuted(true);
+          videoElement.play().catch((e) => console.warn("[Video Player] Muted play failed:", e.message));
+        });
+      }
+    };
+
+    if (videoElement._attachedSource === targetSource) {
+      if (isPaused) {
+        videoElement.pause();
+      } else {
+        safePlay();
+      }
+      return;
+    }
+
+    videoElement._attachedSource = targetSource;
+
+    if (hlsRef.current) {
+      hlsRef.current.destroy();
+      hlsRef.current = null;
+    }
+
+    if (hlsSource && Hls.isSupported()) {
+      const hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: true,
+        backBufferLength: 30,
+        maxBufferLength: 30,
+        maxMaxBufferLength: 60,
+      });
+      hlsRef.current = hls;
+      hls.loadSource(hlsSource);
+      hls.attachMedia(videoElement);
+      hls.on(Hls.Events.MANIFEST_PARSED, () => safePlay());
+      hls.on(Hls.Events.ERROR, (event, data) => {
+        if (data.fatal) {
+          console.warn("[HLS Player] Fatal error, falling back to native MP4:", data);
+          hls.destroy();
+          hlsRef.current = null;
+          videoElement.src = fallbackSource;
+          safePlay();
+        }
+      });
+    } else if (videoElement.canPlayType("application/vnd.apple.mpegurl") && hlsSource) {
+      videoElement.src = hlsSource;
+      safePlay();
+    } else if (fallbackSource) {
+      videoElement.src = fallbackSource;
+      safePlay();
+    }
+  }, [isPaused, isMuted]);
+  */}
+
+  // Instant Callback Ref Video Attachment: Auto-starts immediately with forcePlay on slide transitions & HLS manifest load
+  const attachVideoSource = useCallback((videoElement, slide) => {
+    if (!videoElement || !slide) return;
+    const isVideoSlide = slide.type === 2 || slide.slide_type === 2;
+    if (!isVideoSlide) return;
+
+    const hlsSource = slide.hls_location || (slide.location?.includes(".m3u8") ? slide.location : null);
+    const fallbackSource = slide.fallback_location || slide.video_location || slide.location;
+    const targetSource = hlsSource || fallbackSource;
+
+    const safePlay = (forcePlay = false) => {
+      // If explicitly paused by the user on the CURRENT slide and not forced, respect pause
+      if (isPaused && !forcePlay) return;
+      const playPromise = videoElement.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((err) => {
+          console.warn("[Video Player] Autoplay blocked, falling back to muted play:", err.message);
+          videoElement.muted = true;
+          setIsMuted(true);
+          videoElement.play().catch((e) => console.warn("[Video Player] Muted play failed:", e.message));
+        });
+      }
+    };
+
+    // If this exact source is already active on this element, sync play/pause
+    if (videoElement._attachedSource === targetSource) {
+      if (isPaused) {
+        videoElement.pause();
+      } else {
+        safePlay(false);
+      }
+      return;
+    }
+
+    videoElement._attachedSource = targetSource;
+
+    // Clean up previous HLS instance if any
+    if (hlsRef.current) {
+      hlsRef.current.destroy();
+      hlsRef.current = null;
+    }
+
+    if (hlsSource && Hls.isSupported()) {
+      const hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: true,
+        backBufferLength: 30,
+        maxBufferLength: 30,
+        maxMaxBufferLength: 60,
+      });
+      hlsRef.current = hls;
+      hls.loadSource(hlsSource);
+      hls.attachMedia(videoElement);
+      // Force play immediately once manifest is parsed
+      hls.on(Hls.Events.MANIFEST_PARSED, () => safePlay(true));
+      hls.on(Hls.Events.ERROR, (event, data) => {
+        if (data.fatal) {
+          console.warn("[HLS Player] Fatal error, falling back to native MP4:", data);
+          hls.destroy();
+          hlsRef.current = null;
+          videoElement.src = fallbackSource;
+          safePlay(true);
+        }
+      });
+    } else if (videoElement.canPlayType("application/vnd.apple.mpegurl") && hlsSource) {
+      // Safari Native HLS
+      videoElement.src = hlsSource;
+      safePlay(true);
+    } else if (fallbackSource) {
+      // Direct MP4 Fallback
+      videoElement.src = fallbackSource;
+      safePlay(true);
+    }
+  }, [isPaused, isMuted]);
+
+  // Clean up active HLS instance on component unmount
+  useEffect(() => {
+    return () => {
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+    };
+  }, []);
+
+  {/* Previous single-step lookahead pre-bufferer preserved per zero-deletions rule:
   useEffect(() => {
     if (!slides || slides.length === 0) return;
     // Look ahead to find the next video slide
@@ -817,6 +973,37 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
       })
       .catch(() => {});
   }, [currentIndex, slides]);
+  */}
+
+  // Global Presentation Video Pre-Bufferer: preloads all video HLS playlists & initial chunks for 0ms instant startup
+  useEffect(() => {
+    const slideList = slides && slides.length > 0 ? slides : activeSlides;
+    if (!slideList || slideList.length === 0) return;
+
+    const allVideoSlides = slideList.filter((s) => s.type === 2 || s.slide_type === 2);
+    if (allVideoSlides.length === 0) return;
+
+    allVideoSlides.forEach((vSlide) => {
+      const playlistUrl = vSlide.hls_location || (vSlide.location?.includes(".m3u8") ? vSlide.location : null);
+      if (!playlistUrl) return;
+
+      fetch(playlistUrl, { cache: "force-cache" })
+        .then((res) => (res.ok ? res.text() : null))
+        .then((m3u8Text) => {
+          if (!m3u8Text) return;
+          const segments = m3u8Text
+            .split("\n")
+            .filter((line) => line.trim().endsWith(".ts"))
+            .slice(0, 2); // Preload first 2 chunks (4 seconds of video)
+          const baseUrl = playlistUrl.substring(0, playlistUrl.lastIndexOf("/") + 1);
+          segments.forEach((seg) => {
+            const segUrl = seg.startsWith("http") ? seg : baseUrl + seg;
+            fetch(segUrl, { cache: "force-cache" }).catch(() => {});
+          });
+        })
+        .catch(() => {});
+    });
+  }, [slides, activeSlides]);
 
   // Dedicated Image Slide Audio Player States
   const [audioCurrentTime, setAudioCurrentTime] = useState(0);
@@ -2495,7 +2682,11 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
                   }
                 }}
                 type="button"
-                onClick={() => goToSlide(index)}
+                /* Previous onClick preserved per zero-deletions rule: onClick={() => goToSlide(index)} */
+                onClick={() => {
+                  setIsPaused(false);
+                  goToSlide(index);
+                }}
                 whileHover={{ scale: isActive ? 1.06 : 1.02 }}
                 whileTap={{ scale: 0.96 }}
                 /* Previous uniform thumbnail size preserved per zero-deletions rule:
@@ -2618,7 +2809,11 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
         {isLastSlide ? (
           <button
             type="button"
-            onClick={() => goToSlide(0)}
+            /* Previous onClick preserved per zero-deletions rule: onClick={() => goToSlide(0)} */
+            onClick={() => {
+              setIsPaused(false);
+              goToSlide(0);
+            }}
             className={`w-8 h-10 sm:h-12 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer shrink-0 ${isFs
               ? "bg-white/10 hover:bg-white/20 text-white"
               : "bg-gray-100 hover:bg-gray-200/90 dark:bg-white/10 dark:hover:bg-white/20 text-gray-700 dark:text-gray-200 shadow-sm"
@@ -3674,10 +3869,10 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
                 });
               }
             }}
-            /* Previous status dot position right-[3.8rem] preserved per zero-deletions rule:
-            className="absolute top-3.5 right-[3.8rem] sm:top-4.5 sm:right-[4.5rem] z-20 p-2 flex items-center justify-center cursor-pointer transition-transform duration-200 hover:scale-125 active:scale-95 select-none focus:outline-none bg-transparent border-0"
-            */
+            /* Previous status dot position right-[6.6rem] with download button preserved per zero-deletions rule:
             className="absolute top-3.5 right-[6.6rem] sm:top-4.5 sm:right-[7.5rem] z-20 p-2 flex items-center justify-center cursor-pointer transition-transform duration-200 hover:scale-125 active:scale-95 select-none focus:outline-none bg-transparent border-0"
+            */
+            className="absolute top-3.5 right-[3.8rem] sm:top-4.5 sm:right-[4.5rem] z-20 p-2 flex items-center justify-center cursor-pointer transition-transform duration-200 hover:scale-125 active:scale-95 select-none focus:outline-none bg-transparent border-0"
             title={`Status: ${currentSlide.status === "ok" ? "All Data OK (Green Dot)" : "Warning / Missing Data (Blue Dot)"}. Click to ${showDebugButton ? "hide" : "reveal"} Debug button.`}
             aria-label="Toggle Debug button"
           >
@@ -3709,12 +3904,14 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
             <AnimatePresence mode="wait">
               {currentSlide.type === 2 ? (
                 // Video Slide with Integrated Interactive Video Play Bar (Normal & Fullscreen view)
+                // Previous transition duration 0.35 easeInOut preserved per zero-deletions rule:
+                // transition={{ duration: 0.35, ease: "easeInOut" }}
                 <motion.div
                   key={`video-${currentIndex}`}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  transition={{ duration: 0.35, ease: "easeInOut" }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
                   onMouseMove={handleVideoMouseMove}
                   onMouseEnter={() => setIsVideoControlsVisible(true)}
                   onMouseLeave={handleVideoMouseLeave}
@@ -3813,6 +4010,7 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
                     className="max-w-full max-h-full w-auto h-auto object-contain rounded-lg shadow-2xl cursor-pointer"
                   />
                   */}
+                  {/* Previous static video tag without instant callback ref preserved per zero-deletions rule:
                   <video
                     ref={videoRef}
                     key={currentSlide.hls_location || currentSlide.location}
@@ -3847,6 +4045,61 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
                     onEnded={() => {
                       setTimeLeft(0);
                       if (currentIndex < activeSlides.length - 1) {
+                        goToSlide(currentIndex + 1);
+                      } else {
+                        setIsPaused(true);
+                        // Check presentationHeader.connect_with_us_popus (1 = yes [open ConnectModal at end of last slide], 2 = no [show completion modal])
+                        if (Number(presentationHeader?.connect_with_us_popus) === 1) {
+                          setIsConnectModalOpen(true);
+                        } else {
+                          setShowCompletionModal(true);
+                        }
+                      }
+                    }}
+                    onClick={handleTogglePlayPause}
+                    className="max-w-full max-h-full w-auto h-auto object-contain rounded-lg shadow-2xl cursor-pointer"
+                  />
+                  */}
+                  <video
+                    ref={(el) => {
+                      videoRef.current = el;
+                      if (el) attachVideoSource(el, currentSlide);
+                    }}
+                    key={`video-${currentIndex}-${currentSlide.hls_location || currentSlide.location}`}
+                    poster={currentSlide.poster_location || currentSlide.thumbnail || currentSlide.image_location}
+                    src={currentSlide.fallback_location || currentSlide.video_location}
+                    autoPlay
+                    playsInline
+                    muted={isMuted}
+                    onLoadedMetadata={(e) => {
+                      const dur = e.currentTarget.duration;
+                      if (dur && !isNaN(dur) && isFinite(dur)) {
+                        setVideoDuration(dur);
+                        setTimeLeft(Math.ceil(dur));
+                      }
+                    }}
+                    onTimeUpdate={(e) => {
+                      if (!isScrubbing) {
+                        const cur = e.currentTarget.currentTime;
+                        setVideoCurrentTime(cur);
+                        const dur = e.currentTarget.duration || currentSlide.video_duration || 30;
+                        setVideoDuration(dur);
+                        const remaining = Math.max(0, Math.ceil(dur - cur));
+                        if (!isNaN(remaining) && !showCompletionModal && !isPaused) {
+                          setTimeLeft(remaining);
+                        }
+                      }
+                      try {
+                        const b = e.currentTarget.buffered;
+                        if (b && b.length > 0) {
+                          setVideoBuffered(b.end(b.length - 1));
+                        }
+                      } catch (err) { }
+                    }}
+                    onEnded={() => {
+                      setTimeLeft(0);
+                      if (currentIndex < activeSlides.length - 1) {
+                        setIsPaused(false); // Reset pause state so next slide auto-plays immediately
                         goToSlide(currentIndex + 1);
                       } else {
                         setIsPaused(true);
@@ -4464,7 +4717,7 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
             </button>
           )}
 
-          {/* Top-Right Download Slide Image Button (Beside Fullscreen button) */}
+          {/* Previous Top-Right Download Slide Image Button commented out per user request:
           <button
             type="button"
             onClick={handleDownloadImage}
@@ -4479,6 +4732,7 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
               <Download className="w-5 h-5 text-amber-400 group-hover:scale-110 transition-transform" />
             )}
           </button>
+          */}
 
           {/* Top-Right Fullscreen Toggle Button */}
           <button
@@ -4573,7 +4827,11 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
           {currentIndex === activeSlides.length - 1 ? (
             <button
               type="button"
-              onClick={() => goToSlide(0)}
+              /* Previous onClick preserved per zero-deletions rule: onClick={() => goToSlide(0)} */
+              onClick={() => {
+                setIsPaused(false);
+                goToSlide(0);
+              }}
               className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-black/60 hover:bg-black/90 text-white border border-white/20 shadow-xl backdrop-blur-md flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95 z-20 group cursor-pointer"
               title="Return to First Slide (Home)"
               aria-label="Return to First Slide"
