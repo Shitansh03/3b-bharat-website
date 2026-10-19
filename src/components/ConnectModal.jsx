@@ -2,7 +2,7 @@ import { useState, useEffect, Suspense, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Canvas } from "@react-three/fiber";
-import { Send, CheckCircle, AlertCircle, X, Globe } from "lucide-react";
+import { Send, CheckCircle, AlertCircle, X, Globe, ZoomIn, ZoomOut, Move } from "lucide-react";
 import ConnectGlobe from "./three/ConnectGlobe";
 import { COUNTRIES, getCountryByName } from "../data/countriesData";
 import { useTheme } from "../context/ThemeContext";
@@ -19,6 +19,7 @@ const ConnectModal = ({ isOpen, onClose }) => {
   });
   const [status, setStatus] = useState({ type: "", message: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [zoomSignal, setZoomSignal] = useState(0);
 
   // Selected country details for quick preview banner
   const selectedCountryData = useMemo(
@@ -230,19 +231,46 @@ const ConnectModal = ({ isOpen, onClose }) => {
             <div className="grid grid-cols-1 md:grid-cols-12 min-h-[560px]">
               {/* LEFT COLUMN: Interactive Rotating 3D Globe with Reactive Country Highlight */}
               <div className="md:col-span-5 relative bg-gradient-to-br from-emerald-950/30 via-slate-900/70 to-black/90 border-b md:border-b-0 md:border-r border-gray-200 dark:border-white/10 flex flex-col justify-between p-4 sm:p-5 overflow-hidden">
-                {/* Globe Header Badge */}
+                {/* Globe Header Badge + Zoom Controls */}
                 <div className="relative z-10 flex items-center justify-between">
                   <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-[11px] font-semibold tracking-wider uppercase">
                     <Globe className="w-3.5 h-3.5" />
                     <span>Global Coverage</span>
                   </div>
-                  <span className="text-[10px] text-gray-400 dark:text-gray-500 font-mono tracking-wider uppercase hidden sm:inline">
-                    Interactive 3D
-                  </span>
+
+                  {/* Zoom In & Out Controls */}
+                  <div className="flex items-center gap-1 bg-black/40 dark:bg-black/60 backdrop-blur-md border border-white/10 rounded-xl p-0.5 shadow-sm">
+                    <button
+                      type="button"
+                      onClick={() => setZoomSignal((prev) => (prev >= 0 ? prev + 1 : 1))}
+                      className="p-1.5 rounded-lg text-gray-300 hover:text-white hover:bg-white/15 transition-colors cursor-pointer"
+                      title="Zoom In (+)"
+                      aria-label="Zoom In"
+                    >
+                      <ZoomIn className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setZoomSignal((prev) => (prev <= 0 ? prev - 1 : -1))}
+                      className="p-1.5 rounded-lg text-gray-300 hover:text-white hover:bg-white/15 transition-colors cursor-pointer"
+                      title="Zoom Out (-)"
+                      aria-label="Zoom Out"
+                    >
+                      <ZoomOut className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
 
                 {/* 3D Canvas Center */}
-                <div className="relative w-full h-64 sm:h-72 md:h-full min-h-[260px] flex items-center justify-center my-2">
+                <div className="relative w-full h-64 sm:h-72 md:h-full min-h-[260px] flex items-center justify-center my-2 cursor-grab active:cursor-grabbing">
+                  {/* Subtle interactive hint */}
+                  <div className="absolute top-1 left-1/2 -translate-x-1/2 z-10 pointer-events-none opacity-80">
+                    <span className="text-[10px] text-gray-300 dark:text-gray-400 bg-black/50 backdrop-blur-md px-2.5 py-0.5 rounded-full border border-white/10 tracking-wide font-medium flex items-center gap-1 shadow-sm">
+                      <Move className="w-2.5 h-2.5 text-emerald-400" />
+                      <span>Drag to rotate • Scroll to zoom</span>
+                    </span>
+                  </div>
+
                   <Canvas
                     camera={{ position: [0, 0, 6.2], fov: 36 }}
                     dpr={[1, 1.5]}
@@ -250,7 +278,11 @@ const ConnectModal = ({ isOpen, onClose }) => {
                     style={{ width: "100%", height: "100%", position: "absolute", inset: 0 }}
                   >
                     <Suspense fallback={null}>
-                      <ConnectGlobe selectedCountry={formData.country} isDark={isDark} />
+                      <ConnectGlobe
+                        selectedCountry={formData.country}
+                        isDark={isDark}
+                        zoomSignal={zoomSignal}
+                      />
                     </Suspense>
                   </Canvas>
 
