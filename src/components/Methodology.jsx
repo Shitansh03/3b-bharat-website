@@ -4700,7 +4700,10 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
           )}
           */}
 
-          {/* Top-Left Back Arrow Button (Intelligently returns to Our Approach Technical/Non-Technical cards or Openings) */}
+          {/* Top-Left Back Arrow Button (Intelligently returns to Our Approach Technical/Marketing cards or Openings)
+              Previous tooltip with Non-Technical preserved per zero-deletions rule:
+              title={searchParams.get("category") ? `Back to ${searchParams.get("category") === "technical" ? "Technical" : "Non-Technical"} Modules` : "Back"}
+          */}
           {!isFullScreen && (
             <button
               type="button"
@@ -4708,7 +4711,7 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
               className="absolute top-3 left-3 sm:top-4 sm:left-4 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-black/60 hover:bg-black/90 text-white border border-white/20 hover:border-amber-400/80 shadow-xl backdrop-blur-md flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95 z-20 group cursor-pointer"
               title={
                 searchParams.get("category")
-                  ? `Back to ${searchParams.get("category") === "technical" ? "Technical" : "Non-Technical"} Modules`
+                  ? `Back to ${searchParams.get("category") === "technical" ? "Technical" : "Marketing"} Modules`
                   : "Back"
               }
               aria-label="Back"

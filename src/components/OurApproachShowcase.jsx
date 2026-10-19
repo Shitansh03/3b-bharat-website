@@ -316,12 +316,13 @@ const MasterCategoriesLanding = ({ onSelectCategory }) => {
           </div>
         </motion.div>
 
-        {/* Master Card 2: Non-Technical */}
+        {/* Master Card 2: Marketing (formerly Non-Technical) */}
         <motion.div
           variants={cardVariants}
           whileHover={{ y: -6, scale: 1.015, transition: { type: "spring", stiffness: 350, damping: 22 } }}
           whileTap={{ scale: 0.985 }}
-          onClick={() => onSelectCategory("non-technical")}
+          /* Previous onSelectCategory("non-technical") preserved per zero-deletions rule: onClick={() => onSelectCategory("non-technical")} */
+          onClick={() => onSelectCategory("marketing")}
           className="group relative cursor-pointer rounded-3xl p-5 sm:p-5.5 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl border border-emerald-500/30 hover:border-emerald-500 dark:border-emerald-500/30 dark:hover:border-emerald-400 shadow-xl hover:shadow-2xl hover:shadow-emerald-500/15 dark:hover:shadow-emerald-500/20 transition-all duration-300 flex flex-col justify-between overflow-hidden"
         >
           {/* Ambient Corner Glow */}
@@ -340,8 +341,13 @@ const MasterCategoriesLanding = ({ onSelectCategory }) => {
             </div>
 
             {/* Title & Description */}
+            {/* Previous Non-Technical title preserved per zero-deletions rule:
             <h2 className="text-lg sm:text-xl font-extrabold text-gray-900 dark:text-white mb-1.5 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
               Non-Technical
+            </h2>
+            */}
+            <h2 className="text-lg sm:text-xl font-extrabold text-gray-900 dark:text-white mb-1.5 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+              Marketing
             </h2>
             <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed mb-3">
               Operational workflows, project governance guidelines, quality assurance audits,
@@ -372,7 +378,10 @@ const MasterCategoriesLanding = ({ onSelectCategory }) => {
               Operational Frameworks
             </span>
             <div className="inline-flex items-center gap-2 font-bold text-xs sm:text-sm text-emerald-600 dark:text-emerald-400 group-hover:text-emerald-700 dark:group-hover:text-emerald-300 group-hover:translate-x-1 transition-all">
+              {/* Previous Explore Non-Technical CTA preserved per zero-deletions rule:
               <span>Explore Non-Technical</span>
+              */}
+              <span>Explore Marketing</span>
               <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
             </div>
           </div>
@@ -753,7 +762,13 @@ const DomainCardsGrid = ({ category, onSelectCard, onBack, onSwitchCategory }) =
               </>
             ) : (
               <>
+                {/* Previous Non-Technical title preserved per zero-deletions rule:
                 Non-Technical{" "}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-teal-500">
+                  Operational Modules
+                </span>
+                */}
+                Marketing{" "}
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-teal-500">
                   Operational Modules
                 </span>
@@ -1075,28 +1090,49 @@ const DomainCardsGrid = ({ category, onSelectCard, onBack, onSwitchCategory }) =
           <div className="absolute -top-12 -right-12 w-28 h-28 bg-amber-500/10 dark:bg-amber-500/15 rounded-full blur-2xl pointer-events-none" />
           <div className="absolute -bottom-12 -left-12 w-28 h-28 bg-orange-500/10 dark:bg-orange-500/15 rounded-full blur-2xl pointer-events-none" />
 
-          {/* Authorization Status Badge */}
+          {/* Previous Access Restricted Card Content preserved per zero-deletions rule:
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/30 mb-4 shadow-sm">
             <Lock className="w-3.5 h-3.5 text-amber-500" />
             <span>Authorization Required</span>
           </div>
-
-          {/* Secure Shield Icon Halo */}
           <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500/20 via-orange-500/15 to-transparent text-amber-500 mx-auto flex items-center justify-center mb-4 border border-amber-500/30 shadow-lg shadow-amber-500/15">
             <ShieldAlert className="w-7 h-7" />
           </div>
-
-          {/* Clear, Authoritative Heading */}
           <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white mb-2">
             Access Restricted
           </h2>
-
-          {/* User Requested Phrasing: You don't have authority to view this page & kindly please connect with us */}
           <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 leading-relaxed mb-6 max-w-md mx-auto">
             You do not have the authority to view this page. Kindly connect with us to request viewing access.
           </p>
+          */}
 
-          {/* Action Buttons: Connect with us (primary) & Back to Categories (secondary) */}
+          {/* Polite Viewing Access Status Badge */}
+          <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-bold tracking-wide text-amber-700 dark:text-amber-300 bg-amber-500/10 border border-amber-500/25 mb-4 shadow-sm">
+            <Lock className="w-3.5 h-3.5 text-amber-500" />
+            <span>Viewing Access</span>
+          </div>
+
+          {/* Polite Lock Icon Halo */}
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500/20 via-orange-500/15 to-transparent text-amber-500 mx-auto flex items-center justify-center mb-4 border border-amber-500/30 shadow-lg shadow-amber-500/15">
+            <Lock className="w-7 h-7 text-amber-500" />
+          </div>
+
+          {/* Polite, Courteous Heading */}
+          <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white mb-2">
+            We're Sorry!
+          </h2>
+
+          {/* Polite Sub-heading stating authorization status clearly as requested by seniors */}
+          <p className="text-sm sm:text-base font-semibold text-gray-800 dark:text-gray-100 mb-2">
+            You are not authorized to view this page.
+          </p>
+
+          {/* Polite, Courteous Body Message */}
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 leading-relaxed mb-6 max-w-md mx-auto">
+            We sincerely apologize for the inconvenience. Kindly connect with us to request viewing access, or return to explore other available categories.
+          </p>
+
+          {/* Action Buttons: Back to Categories & Connect with us */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <button
               type="button"
@@ -1136,15 +1172,15 @@ const OurApproachShowcase = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  const currentCategory = searchParams.get("category"); // 'technical' | 'non-technical' | null
+  const currentCategory = searchParams.get("category"); // 'technical' | 'marketing' | 'non-technical' | null
   const currentPptId = searchParams.get("ppt") || searchParams.get("wph_id"); // '11', '1', etc. | null
 
   useEffect(() => {
     if (!currentPptId) {
       if (currentCategory === "technical") {
         document.title = "Technical Methodologies - 3D Bharat";
-      } else if (currentCategory === "non-technical") {
-        document.title = "Non-Technical Modules - 3D Bharat";
+      } else if (currentCategory === "marketing" || currentCategory === "non-technical") {
+        document.title = "Marketing Modules - 3D Bharat";
       } else {
         document.title = "Our Approach - 3D Bharat";
       }
@@ -1185,6 +1221,7 @@ const OurApproachShowcase = () => {
         ? "← Back to Openings"
         : "← Back";
     */}
+    {/* Previous backButtonLabel with Non-Technical preserved per zero-deletions rule:
     const backButtonLabel =
       currentCategory === "technical"
         ? "Back to Technical Modules"
@@ -1193,10 +1230,19 @@ const OurApproachShowcase = () => {
         : isFromOpenings
         ? "Back to Openings"
         : "Back";
+    */}
+    const backButtonLabel =
+      currentCategory === "technical"
+        ? "Back to Technical Modules"
+        : currentCategory === "marketing" || currentCategory === "non-technical"
+        ? "Back to Marketing Modules"
+        : isFromOpenings
+        ? "Back to Openings"
+        : "Back";
 
     const handleBackFromPlayer = () => {
       if (currentCategory) {
-        // Return back to the category's cards (Technical or Non-Technical)
+        // Return back to the category's cards (Technical or Marketing)
         setSearchParams({ category: currentCategory });
       } else if (isFromOpenings) {
         // Return back to Openings module
