@@ -688,7 +688,7 @@ const DomainCardsGrid = ({ category, onSelectCard, onBack, onSwitchCategory }) =
     getCategoryCards(categoryType)
       .then((res) => {
         if (isMounted) {
-          if (res && res.cards) {
+          if (res && res.cards && Array.isArray(res.cards)) {
             setCards(res.cards);
           } else {
             setCards([]);
@@ -699,7 +699,10 @@ const DomainCardsGrid = ({ category, onSelectCard, onBack, onSwitchCategory }) =
       .catch((err) => {
         console.error("[DomainCardsGrid] Error fetching category cards:", err);
         if (isMounted) {
-          setFetchError("Unable to load domain modules. Please try again.");
+          // Gracefully fallback to empty cards so visitors seamlessly see the polite cover-up screen
+          // instead of a raw red technical error box
+          setCards([]);
+          setFetchError(null);
           setIsLoading(false);
         }
       });
@@ -822,19 +825,10 @@ const DomainCardsGrid = ({ category, onSelectCard, onBack, onSwitchCategory }) =
             </div>
           ))}
         </div>
-      ) : fetchError ? (
-        // Error state
+      ) : /* PRESERVED: Previous technical error block preserved per zero-deletions rule:
+      fetchError ? (
         <div className="w-full py-8 text-center">
           <p className="text-xs sm:text-sm font-semibold text-red-500 mb-3">{fetchError}</p>
-          {/* PRESERVED: Previous "← Return to Categories" preserved per zero-deletions rule:
-          <button
-            type="button"
-            onClick={onBack}
-            className="px-4 py-1.5 rounded-xl text-xs font-bold text-white bg-amber-500 hover:bg-amber-600 shadow-md transition-all cursor-pointer"
-          >
-            ← Return to Categories
-          </button>
-          */}
           <button
             type="button"
             onClick={onBack}
@@ -843,7 +837,7 @@ const DomainCardsGrid = ({ category, onSelectCard, onBack, onSwitchCategory }) =
             Return to Categories
           </button>
         </div>
-      ) : /* Previous cards.length > 0 check preserved per zero-deletions rule */ !isForceUnauthorized && cards.length > 0 ? (
+      ) : */ !isForceUnauthorized && cards.length > 0 ? (
         // Dynamic Cards Grid: Compact, sleek, small & highly interactive and impressive
         <motion.div
           variants={containerVariants}

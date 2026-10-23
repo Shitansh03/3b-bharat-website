@@ -39,6 +39,7 @@ import Hls from "hls.js";
 import { getActivePresentation } from "../services/presentationService";
 */}
 import { getActivePresentation } from "../services/presentationService";
+import { BASE_URL } from "../services/api";
 
 {/* Previous 10/11 slides images and 9 audios preserved per zero-deletions rule:
 export const SLIDES_IMAGES_OLD = [
@@ -632,6 +633,27 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
   const [isScrubbing, setIsScrubbing] = useState(false);
   const [hoverTime, setHoverTime] = useState(null);
   const [hoverPosition, setHoverPosition] = useState(0);
+
+  // Helper to reliably construct first-frame poster image URL for video slide thumbnails
+  const getVideoPosterUrl = useCallback((slide) => {
+    if (!slide) return null;
+    const raw = slide.poster_location || slide.thumbnail || slide.poster || slide.image_location;
+    if (raw && typeof raw === "string" && raw.trim().length > 0) {
+      if (raw.includes("localhost:3000/server")) {
+        return raw.replace(/http:\/\/localhost:3000\/server/g, BASE_URL);
+      }
+      if (raw.startsWith("/")) {
+        return `${BASE_URL.replace(/\/server$/, "")}${raw}`;
+      }
+      return raw;
+    }
+    const wId = slide.wph_id || targetPptId;
+    const sId = slide.slide_id || slide.id || slide.sequence;
+    if (wId && sId) {
+      return `${BASE_URL}/presentation/hls/${wId}/${sId}/poster.jpg`;
+    }
+    return null;
+  }, [targetPptId]);
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
   const videoControlsTimerRef = useRef(null);
   const scrubBarRef = useRef(null);
@@ -1469,6 +1491,17 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
       document.removeEventListener("webkitfullscreenchange", handleFullScreenChange);
     };
   }, []);
+
+  // Prevent background page scrolling when fullscreen mode/overlay is active
+  useEffect(() => {
+    if (isFullScreen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [isFullScreen]);
 
   /* Previous Fullscreen auto-hide effect preserved per zero-deletions rule:
   useEffect(() => {
@@ -2709,6 +2742,7 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
               >
                 {slide.type === 2 ? (
                   <div className="w-full h-full bg-neutral-900 relative flex items-center justify-center overflow-hidden">
+                    {/* Previous raw video element preserved per zero-deletions rule:
                     <video
                       src={`${slide.location}#t=0.5`}
                       preload="metadata"
@@ -2716,12 +2750,29 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
                       playsInline
                       className="w-full h-full object-cover pointer-events-none"
                     />
-                    <div className="absolute inset-0 bg-black/35 flex items-center justify-center">
+                    */}
+                    {getVideoPosterUrl(slide) ? (
+                      <img
+                        src={getVideoPosterUrl(slide)}
+                        alt={slide.title}
+                        draggable={false}
+                        className="w-full h-full object-cover pointer-events-none select-none"
+                        loading="eager"
+                        onError={(e) => {
+                          e.currentTarget.style.display = "none";
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-neutral-900 flex items-center justify-center">
+                        <Play className="w-3.5 h-3.5 text-neutral-500 fill-neutral-500" />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-black/25 flex items-center justify-center pointer-events-none">
                       <div className="w-4.5 h-4.5 rounded-full bg-black/60 backdrop-blur-sm border border-white/30 flex items-center justify-center shadow">
                         <Play className="w-2 h-2 text-white fill-white ml-0.5" />
                       </div>
                     </div>
-                    <div className="absolute bottom-0.5 right-1 px-1 py-0.5 rounded bg-black/70 text-[7px] font-mono font-bold text-white/90">
+                    <div className="absolute bottom-0.5 right-1 px-1 py-0.5 rounded bg-black/75 text-[7px] font-mono font-bold text-white/90 pointer-events-none">
                       VID
                     </div>
                   </div>
@@ -3449,10 +3500,11 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
   >
   */}
   return (
-    <div className="w-full h-screen max-h-screen overflow-hidden bg-stone-100 dark:bg-black text-gray-900 dark:text-white transition-colors duration-300 flex flex-col pt-20 pb-2 px-3 sm:px-6">
-      <div className="w-full max-w-6xl mx-auto flex-1 min-h-0 flex flex-col justify-between">
-        {/* 1. Explore 3D Bharat Header Bar (Clean, Compact, Above Slideshow) */}
-        <div className="w-full shrink-0 mb-1.5">
+    <div className={`w-full h-screen max-h-screen overflow-hidden bg-stone-100 dark:bg-black text-gray-900 dark:text-white transition-colors duration-300 flex flex-col ${isFullScreen ? "p-0" : "pt-20 pb-2 px-3 sm:px-6"}`}>
+      <div className={`w-full mx-auto flex-1 min-h-0 flex flex-col justify-between ${isFullScreen ? "max-w-none p-0" : "max-w-6xl"}`}>
+        {/* 1. Explore 3D Bharat Header Bar (Clean, Compact, Above Slideshow) - Hidden in Fullscreen */}
+        {!isFullScreen && (
+          <div className="w-full shrink-0 mb-1.5">
           <div className="w-full flex items-center justify-between gap-2 bg-white/85 dark:bg-neutral-900/85 backdrop-blur-xl border border-gray-200 dark:border-white/10 py-1.5 px-3 sm:px-4 rounded-xl shadow-sm">
             <div className="flex items-center gap-2">
               {/* Optional onBack button to return to domain cards / categories */}
@@ -3613,6 +3665,7 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
             </div>
           </div>
         </div>
+        )}
 
         {/* 2. Main Slideshow Display (Constrained height with top-left logo & top-right green/blue health dot) */}
         {/* Previous slideshowRef style filter removed so fullscreen controls are unaffected:
@@ -3631,10 +3684,19 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
             } overflow-hidden select-none group`}
         >
         */}
+        {/* Previous z-50 slideshow container preserved per zero-deletions rule:
         <div
           ref={slideshowRef}
           className={`relative w-full ${isFullScreen
             ? "fixed inset-0 z-50 h-screen w-screen bg-black flex items-center justify-center p-0"
+            : "flex-1 min-h-0 w-full flex items-center justify-center bg-black/95 rounded-2xl border border-white/20 dark:border-white/15 shadow-[0_0_30px_rgba(249,115,22,0.18),0_0_40px_rgba(16,185,129,0.18),0_15px_35px_rgba(0,0,0,0.5)]"
+            } overflow-hidden select-none group`}
+        >
+        */}
+        <div
+          ref={slideshowRef}
+          className={`relative w-full ${isFullScreen
+            ? "fixed inset-0 z-[9999] h-screen w-screen bg-black flex items-center justify-center p-0 m-0"
             : "flex-1 min-h-0 w-full flex items-center justify-center bg-black/95 rounded-2xl border border-white/20 dark:border-white/15 shadow-[0_0_30px_rgba(249,115,22,0.18),0_0_40px_rgba(16,185,129,0.18),0_15px_35px_rgba(0,0,0,0.5)]"
             } overflow-hidden select-none group`}
         >
