@@ -104,8 +104,6 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
   const [slides, setSlides] = useState([]);
   const [presentationHeader, setPresentationHeader] = useState(null);
   const [documents, setDocuments] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [fetchError, setFetchError] = useState(null);
 
   // Active slides list from dynamic database
   const activeSlides = slides || [];
@@ -130,16 +128,6 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
   // Connect with us popup modal state
   const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
 
-  // Standard Brightness (100%) and Volume (100%) - Brightness adjustment postponed as requested
-  const [brightness, setBrightness] = useState(100);
-  const [volume, setVolume] = useState(100);
-  const [showBrightnessPopover, setShowBrightnessPopover] = useState(false);
-  const [showVolumePopover, setShowVolumePopover] = useState(false);
-  const previousSettingsRef = useRef({
-    brightness: 100,
-    volume: 100,
-  });
-
   // Fullscreen auto-hide controls state & timer ref
   const [showControlsInFullScreen, setShowControlsInFullScreen] = useState(true);
   const [isPinnedOpenInFullScreen, setIsPinnedOpenInFullScreen] = useState(false);
@@ -149,21 +137,7 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
   const videoRef = useRef(null);
   // Active HLS instance reference
   const hlsRef = useRef(null);
-  const loadedVideoSrcRef = useRef(null);
   const audioRef = useRef(null);
-  const audioContextRef = useRef(null);
-  const audioSourceMapRef = useRef(new WeakMap());
-  const audioGainMapRef = useRef(new WeakMap());
-
-  // Dedicated Video Slide Play Bar States
-  const [videoCurrentTime, setVideoCurrentTime] = useState(0);
-  const [videoDuration, setVideoDuration] = useState(0);
-  const [videoBuffered, setVideoBuffered] = useState(0);
-  const [videoPlaybackRate, setVideoPlaybackRate] = useState(1);
-  const [isVideoControlsVisible, setIsVideoControlsVisible] = useState(true);
-  const [isScrubbing, setIsScrubbing] = useState(false);
-  const [hoverTime, setHoverTime] = useState(null);
-  const [hoverPosition, setHoverPosition] = useState(0);
 
   // Helper to reliably construct first-frame poster image URL for video slide thumbnails
   const getVideoPosterUrl = useCallback((slide) => {
@@ -185,77 +159,6 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
     }
     return null;
   }, [targetPptId]);
-  const [showSpeedMenu, setShowSpeedMenu] = useState(false);
-  const videoControlsTimerRef = useRef(null);
-  const scrubBarRef = useRef(null);
-
-  // Time format helper for video player (MM:SS)
-  const formatVideoTime = useCallback((seconds) => {
-    if (isNaN(seconds) || !isFinite(seconds) || seconds < 0) return "00:00";
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-  }, []);
-
-  // Video scrubber jump handler
-  const handleScrub = useCallback((e) => {
-    if (!scrubBarRef.current || !videoRef.current) return;
-    const rect = scrubBarRef.current.getBoundingClientRect();
-    const clickX = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
-    const percentage = clickX / rect.width;
-    const targetDuration = videoDuration || videoRef.current.duration || currentSlide.video_duration || 30;
-    const newTime = percentage * targetDuration;
-
-    videoRef.current.currentTime = newTime;
-    setVideoCurrentTime(newTime);
-    const remaining = Math.max(0, Math.ceil(targetDuration - newTime));
-    setTimeLeft(remaining);
-  }, [videoDuration, currentSlide]);
-
-  // Video scrubber hover and drag handler
-  const handleScrubMouseMove = useCallback((e) => {
-    if (!scrubBarRef.current) return;
-    const rect = scrubBarRef.current.getBoundingClientRect();
-    const clickX = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
-    const percentage = clickX / rect.width;
-    const targetDuration = videoDuration || videoRef.current?.duration || currentSlide.video_duration || 30;
-    setHoverPosition(clickX);
-    setHoverTime(percentage * targetDuration);
-    if (isScrubbing) {
-      handleScrub(e);
-    }
-  }, [videoDuration, currentSlide, isScrubbing, handleScrub]);
-
-  // Global mouseup to release scrubbing cleanly
-  useEffect(() => {
-    const handleMouseUp = () => {
-      if (isScrubbing) {
-        setIsScrubbing(false);
-      }
-    };
-    window.addEventListener("mouseup", handleMouseUp);
-    return () => window.removeEventListener("mouseup", handleMouseUp);
-  }, [isScrubbing]);
-
-  // Skip forward or backward by N seconds
-  const handleSkip = useCallback((seconds) => {
-    if (!videoRef.current) return;
-    const targetDuration = videoDuration || videoRef.current.duration || currentSlide.video_duration || 30;
-    const newTime = Math.max(0, Math.min(targetDuration, videoRef.current.currentTime + seconds));
-    videoRef.current.currentTime = newTime;
-    setVideoCurrentTime(newTime);
-    setTimeLeft(Math.max(0, Math.ceil(targetDuration - newTime)));
-  }, [videoDuration, currentSlide]);
-
-  // Playback speed rate changer
-  const handlePlaybackRateChange = useCallback((rate) => {
-    setVideoPlaybackRate(rate);
-    if (videoRef.current) {
-      videoRef.current.playbackRate = rate;
-    }
-    setShowSpeedMenu(false);
-  }, []);
-
   // Instant Callback Ref Video Attachment: Auto-starts immediately with forcePlay on slide transitions & HLS manifest load
   const attachVideoSource = useCallback((videoElement, slide) => {
     if (!videoElement || !slide) return;
@@ -521,8 +424,6 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
     let isMounted = true;
     const fetchPresentation = async () => {
       try {
-        setIsLoading(true);
-        setFetchError(null);
         const res = await getActivePresentation(targetPptId);
         if (isMounted && res) {
           if (res.slides && res.slides.length > 0) {
@@ -548,13 +449,11 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
       } catch (err) {
         console.warn("[Methodology] Error fetching presentation from backend, using default fallback:", err);
         if (isMounted) {
-          setFetchError(err?.message || "Failed to load presentation from backend");
-          document.title = "3D Bharat - To Achieve Precise Work Progress Monitoring";
+            document.title = "3D Bharat - To Achieve Precise Work Progress Monitoring";
         }
       } finally {
         if (isMounted) {
-          setIsLoading(false);
-        }
+          }
       }
     };
 
@@ -778,62 +677,6 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
       goToSlide(currentIndex - 1);
     }
   }, [currentIndex, goToSlide]);
-
-  // Download currently displayed slide image
-  const [isDownloading, setIsDownloading] = useState(false);
-  const handleDownloadImage = useCallback(async (e) => {
-    if (e) e.stopPropagation();
-    const imageSrc = currentSlide?.image_location || currentSlide?.location;
-    if (!imageSrc) return;
-
-    try {
-      setIsDownloading(true);
-      const fileName = imageSrc.split("/").pop().split("?")[0] || `slide_${currentIndex + 1}.jpg`;
-
-      // Use backend proxy endpoint to avoid CORS restrictions and force real download
-      const proxyDownloadUrl = `http://localhost:3000/server/presentation/download-proxy?url=${encodeURIComponent(imageSrc)}`;
-      
-      let blob;
-      try {
-        const response = await fetch(proxyDownloadUrl);
-        if (response.ok) {
-          blob = await response.blob();
-        } else {
-          // Direct fallback attempt
-          const directRes = await fetch(imageSrc);
-          if (directRes.ok) blob = await directRes.blob();
-        }
-      } catch (fetchErr) {
-        console.warn("Proxy fetch error, falling back to direct download anchor:", fetchErr);
-      }
-
-      if (blob) {
-        const blobUrl = window.URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = blobUrl;
-        link.download = fileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(blobUrl);
-      } else {
-        // Fallback: trigger download via proxy URL directly in a temporary iframe to avoid opening in current tab
-        const iframe = document.createElement("iframe");
-        iframe.style.display = "none";
-        iframe.src = proxyDownloadUrl;
-        document.body.appendChild(iframe);
-        setTimeout(() => {
-          if (document.body.contains(iframe)) {
-            document.body.removeChild(iframe);
-          }
-        }, 5000);
-      }
-    } catch (err) {
-      console.error("Download failed:", err);
-    } finally {
-      setTimeout(() => setIsDownloading(false), 800);
-    }
-  }, [currentSlide, currentIndex]);
 
   // Ultra-smooth, effortless momentum wheel scrolling and drag-to-scroll inside the slide bar anytime (instantly cancels any active smooth-scroll lock)
   useEffect(() => {
@@ -1136,38 +979,6 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
   // 3. When active slide is the last slide, 1st slide is NOT shown; only the Restart button is presented
   const totalSlides = activeSlides.length;
   const isLastSlide = currentIndex === totalSlides - 1;
-
-  const visibleSlides = isLastSlide
-    ? [
-      // Preceding slides ending strictly with the last slide (Slide 10)
-      ...[totalSlides - 4, totalSlides - 3, totalSlides - 2, totalSlides - 1].map((idx) => ({
-        offset: idx - currentIndex,
-        index: idx,
-        slide: activeSlides[idx] || activeSlides[0],
-        isRestartButton: false,
-      })),
-      // 5th slot is strictly the Restart button, without showing Slide 1
-      {
-        isRestartButton: true,
-        offset: 1,
-        index: 0,
-        slide: null,
-      },
-    ]
-    : (() => {
-      // Sliding window of 5 slides clamped within [0, totalSlides - 5]
-      // When currentIndex is 0 (Slide 1), startIdx is strictly 0, so Slide 1 is immediately after '<'
-      const startIdx = Math.max(0, Math.min(currentIndex - 2, Math.max(0, totalSlides - 5)));
-      return Array.from({ length: Math.min(5, totalSlides) }, (_, i) => {
-        const idx = startIdx + i;
-        return {
-          offset: idx - currentIndex,
-          index: idx,
-          slide: activeSlides[idx] || activeSlides[0],
-          isRestartButton: false,
-        };
-      });
-    })();
 
   // Attractive, Modern Glassmorphic Bottom Controls Dock (Non-circular, smoothly scrollable slide bar without affecting active slide)
   const renderBottomControls = (isFs = false) => (
@@ -1871,27 +1682,16 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
                     onLoadedMetadata={(e) => {
                       const dur = e.currentTarget.duration;
                       if (dur && !isNaN(dur) && isFinite(dur)) {
-                        setVideoDuration(dur);
                         setTimeLeft(Math.ceil(dur));
                       }
                     }}
                     onTimeUpdate={(e) => {
-                      if (!isScrubbing) {
-                        const cur = e.currentTarget.currentTime;
-                        setVideoCurrentTime(cur);
-                        const dur = e.currentTarget.duration || currentSlide.video_duration || 30;
-                        setVideoDuration(dur);
-                        const remaining = Math.max(0, Math.ceil(dur - cur));
-                        if (!isNaN(remaining) && !showCompletionModal && !isPaused) {
-                          setTimeLeft(remaining);
-                        }
+                      const cur = e.currentTarget.currentTime;
+                      const dur = e.currentTarget.duration || currentSlide?.video_duration || 30;
+                      const remaining = Math.max(0, Math.ceil(dur - cur));
+                      if (!isNaN(remaining) && !showCompletionModal && !isPaused) {
+                        setTimeLeft(remaining);
                       }
-                      try {
-                        const b = e.currentTarget.buffered;
-                        if (b && b.length > 0) {
-                          setVideoBuffered(b.end(b.length - 1));
-                        }
-                      } catch (err) { }
                     }}
                     onEnded={() => {
                       setTimeLeft(0);
@@ -1974,8 +1774,7 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
                         onPause={() => setIsAudioPlaying(false)}
                         onEnded={() => {
                           setIsAudioPlaying(false);
-                          setAudioCurrentTime(audioDuration || e.currentTarget.duration || 0);
-                        }}
+                            }}
                       />
 
                     </>
