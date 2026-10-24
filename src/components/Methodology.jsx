@@ -274,103 +274,17 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
     });
   }, [slides, activeSlides]);
 
-  // Dedicated Image Slide Audio Player States
-  const [audioCurrentTime, setAudioCurrentTime] = useState(0);
-  const [audioDuration, setAudioDuration] = useState(0);
-  const [isAudioScrubbing, setIsAudioScrubbing] = useState(false);
-  const [audioHoverTime, setAudioHoverTime] = useState(null);
-  const [audioHoverPosition, setAudioHoverPosition] = useState(0);
-  const [isAudioPlaying, setIsAudioPlaying] = useState(!isPaused);
-  const audioScrubBarRef = useRef(null);
-
-  // Audio scrubber jump handler
-  const handleAudioScrub = useCallback((e) => {
-    if (!audioScrubBarRef.current || !audioRef.current) return;
-    const rect = audioScrubBarRef.current.getBoundingClientRect();
-    const clickX = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
-    const percentage = clickX / rect.width;
-    const targetDuration = audioDuration || audioRef.current.duration || 30;
-    const newTime = Math.max(0, Math.min(targetDuration, percentage * targetDuration));
-
-    audioRef.current.currentTime = newTime;
-    setAudioCurrentTime(newTime);
-  }, [audioDuration]);
-
-  // Audio scrubber hover and drag handler
-  const handleAudioScrubMouseMove = useCallback((e) => {
-    if (!audioScrubBarRef.current) return;
-    const rect = audioScrubBarRef.current.getBoundingClientRect();
-    const clickX = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
-    const percentage = clickX / rect.width;
-    const targetDuration = audioDuration || audioRef.current?.duration || 30;
-    setAudioHoverPosition(clickX);
-    setAudioHoverTime(percentage * targetDuration);
-    if (isAudioScrubbing) {
-      handleAudioScrub(e);
-    }
-  }, [audioDuration, isAudioScrubbing, handleAudioScrub]);
-
-  // Global mouseup to release audio scrubbing cleanly
-  useEffect(() => {
-    const handleMouseUp = () => {
-      if (isAudioScrubbing) {
-        setIsAudioScrubbing(false);
-      }
-    };
-    window.addEventListener("mouseup", handleMouseUp);
-    return () => window.removeEventListener("mouseup", handleMouseUp);
-  }, [isAudioScrubbing]);
-
   // Skip audio forward or backward by N seconds (e.g. -5s or +5s)
   const handleSkipAudio = useCallback((seconds) => {
     if (!audioRef.current) return;
-    const targetDuration = audioDuration || audioRef.current.duration || 30;
+    const targetDuration = audioRef.current.duration || 30;
     const newTime = Math.max(0, Math.min(targetDuration, audioRef.current.currentTime + seconds));
     audioRef.current.currentTime = newTime;
-    setAudioCurrentTime(newTime);
-  }, [audioDuration]);
-
-  // Audio Play / Pause toggle
-  const handleToggleAudioPlay = useCallback((e) => {
-    if (e) e.stopPropagation();
-    if (!audioRef.current) return;
-    if (audioRef.current.paused) {
-      audioRef.current.play().catch(() => { });
-      setIsAudioPlaying(true);
-    } else {
-      audioRef.current.pause();
-      setIsAudioPlaying(false);
-    }
   }, []);
 
-  // Video hover auto-hide controls management
-  const handleVideoMouseMove = useCallback(() => {
-    setIsVideoControlsVisible(true);
-    if (videoControlsTimerRef.current) clearTimeout(videoControlsTimerRef.current);
-    if (!isPaused && !isScrubbing && !showSpeedMenu) {
-      videoControlsTimerRef.current = setTimeout(() => {
-        setIsVideoControlsVisible(false);
-      }, 2500);
-    }
-  }, [isPaused, isScrubbing, showSpeedMenu]);
-
-  const handleVideoMouseLeave = useCallback(() => {
-    if (!isPaused && !isScrubbing && !showSpeedMenu) {
-      setIsVideoControlsVisible(false);
-    }
-  }, [isPaused, isScrubbing, showSpeedMenu]);
-
-  // Reveal video controls whenever paused
+  // Synchronize audio and video elements whenever mute state updates (clamped to HTML5 max 1.0)
   useEffect(() => {
-    if (isPaused) {
-      setIsVideoControlsVisible(true);
-      if (videoControlsTimerRef.current) clearTimeout(videoControlsTimerRef.current);
-    }
-  }, [isPaused]);
-
-  // Synchronize audio and video elements whenever volume or mute state updates (clamped to HTML5 max 1.0)
-  useEffect(() => {
-    const effectiveVolume = isMuted ? 0 : Math.min(1, volume / 100);
+    const effectiveVolume = isMuted ? 0 : 1;
     if (videoRef.current) {
       videoRef.current.volume = effectiveVolume;
       videoRef.current.muted = isMuted;
@@ -379,7 +293,7 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
       audioRef.current.volume = effectiveVolume;
       audioRef.current.muted = isMuted;
     }
-  }, [volume, isMuted, currentIndex]);
+  }, [isMuted, currentIndex]);
 
   const prevMutedRef = useRef(isMuted);
 
@@ -403,7 +317,6 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
       } else if (currentSlide.type === 2 && videoRef.current) {
         videoRef.current.currentTime = 0;
         videoRef.current.muted = false;
-        setVideoCurrentTime(0);
         if (!isPaused) {
           videoRef.current.play().catch(() => { });
         }
@@ -647,14 +560,6 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
     setIsPaused(false);
     setShowCompletionModal(false);
     setPauseTimeLeft(PAUSE_TIMER_SECONDS);
-    setVideoCurrentTime(0);
-    setVideoDuration(0);
-    setVideoBuffered(0);
-    setIsVideoControlsVisible(true);
-    setShowSpeedMenu(false);
-    setAudioCurrentTime(0);
-    setAudioDuration(0);
-    setIsAudioPlaying(true);
     const targetSlide = activeSlides[newIndex] || activeSlides[0];
     const initialTime = targetSlide?.type === 2
       ? (targetSlide?.video_duration || 30)
@@ -808,7 +713,6 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
       ? (currentSlide.video_duration || 30)
       : (currentSlide.ideal_time || DEFAULT_AUTO_PLAY_SECONDS);
     setTimeLeft(duration);
-    setVideoCurrentTime(0);
 
     if (currentSlide.type === 2 && videoRef.current) {
       videoRef.current.currentTime = 0;
@@ -1663,9 +1567,6 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.2, ease: "easeOut" }}
-                  onMouseMove={handleVideoMouseMove}
-                  onMouseEnter={() => setIsVideoControlsVisible(true)}
-                  onMouseLeave={handleVideoMouseLeave}
                   className="w-full h-full flex items-center justify-center relative group"
                 >
                   <video
@@ -1744,7 +1645,7 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
                   {currentSlide.audio_location && (
                     <>
 
-                      {/* Synchronized slide audio with time tracking & scrubber events */}
+                      {/* Synchronized slide audio with time tracking & auto-play */}
                       <audio
                         ref={audioRef}
                         key={`audio-${currentSlide.audio_location}`}
@@ -1755,26 +1656,14 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
                         onLoadedMetadata={(e) => {
                           const dur = e.currentTarget.duration;
                           if (dur && !isNaN(dur) && isFinite(dur)) {
-                            setAudioDuration(dur);
                             setTimeLeft(Math.ceil(dur));
                           }
-                          setAudioCurrentTime(0);
                           e.currentTarget.currentTime = 0;
                           e.currentTarget.muted = isMuted;
                           if (!isPaused) {
-                            e.currentTarget.play().then(() => setIsAudioPlaying(true)).catch(() => { });
+                            e.currentTarget.play().catch(() => { });
                           }
                         }}
-                        onTimeUpdate={(e) => {
-                          if (!isAudioScrubbing) {
-                            setAudioCurrentTime(e.currentTarget.currentTime);
-                          }
-                        }}
-                        onPlay={() => setIsAudioPlaying(true)}
-                        onPause={() => setIsAudioPlaying(false)}
-                        onEnded={() => {
-                          setIsAudioPlaying(false);
-                            }}
                       />
 
                     </>
