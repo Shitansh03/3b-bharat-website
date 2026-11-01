@@ -130,7 +130,7 @@ const YouTubeSlidePlayer = ({
       if (playerInstanceRef.current) {
         try {
           playerInstanceRef.current.destroy();
-        } catch (e) {}
+        } catch (e) { }
         playerInstanceRef.current = null;
       }
 
@@ -171,7 +171,7 @@ const YouTubeSlidePlayer = ({
                 if (tracks && tracks.length > 0) {
                   event.target.setOption?.("captions", "track", tracks[0]);
                 }
-              } catch (e) {}
+              } catch (e) { }
 
               if (isMuted) {
                 event.target.mute();
@@ -209,7 +209,7 @@ const YouTubeSlidePlayer = ({
                     const cur = event.target.getCurrentTime?.() || 0;
                     const total = event.target.getDuration?.() || 0;
                     onTimeUpdate(cur, total);
-                  } catch (e) {}
+                  } catch (e) { }
                 }, 250);
               } else if (event.data === 2) {
                 if (timeIntervalRef.current) clearInterval(timeIntervalRef.current);
@@ -250,7 +250,7 @@ const YouTubeSlidePlayer = ({
         if (playerInstanceRef.current) {
           try {
             playerInstanceRef.current.destroy();
-          } catch (e) {}
+          } catch (e) { }
         }
       };
     }
@@ -261,7 +261,7 @@ const YouTubeSlidePlayer = ({
       if (playerInstanceRef.current) {
         try {
           playerInstanceRef.current.destroy();
-        } catch (e) {}
+        } catch (e) { }
         playerInstanceRef.current = null;
       }
     };
@@ -277,7 +277,7 @@ const YouTubeSlidePlayer = ({
       } else {
         player.playVideo?.();
       }
-    } catch (e) {}
+    } catch (e) { }
   }, [isPaused]);
 
   // Synchronize mute / unmute with global presentation state
@@ -290,7 +290,7 @@ const YouTubeSlidePlayer = ({
       } else {
         player.unMute?.();
       }
-    } catch (e) {}
+    } catch (e) { }
   }, [isMuted]);
 
   return (
@@ -438,9 +438,9 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
       try {
         videoRef.current.currentTime = time;
         if (!isPaused) {
-          videoRef.current.play().catch(() => {});
+          videoRef.current.play().catch(() => { });
         }
-      } catch (err) {}
+      } catch (err) { }
     }
   }, [isCurrentSlideYouTube, isPaused]);
 
@@ -449,11 +449,11 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
     if (isCurrentSlideYouTube && player) {
       try {
         if (isCaptionsOn) {
-          try { player.unloadModule?.("captions"); } catch (e) {}
-          try { player.setOption?.("captions", "track", {}); } catch (e) {}
+          try { player.unloadModule?.("captions"); } catch (e) { }
+          try { player.setOption?.("captions", "track", {}); } catch (e) { }
           setIsCaptionsOn(false);
         } else {
-          try { player.loadModule?.("captions"); } catch (e) {}
+          try { player.loadModule?.("captions"); } catch (e) { }
           try {
             const trackList = player.getOption?.("captions", "trackList");
             if (trackList && trackList.length > 0) {
@@ -461,7 +461,7 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
             } else {
               player.setOption?.("captions", "track", { languageCode: "en" });
             }
-          } catch (e) {}
+          } catch (e) { }
           setIsCaptionsOn(true);
         }
       } catch (e) {
@@ -613,10 +613,10 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
           const baseUrl = playlistUrl.substring(0, playlistUrl.lastIndexOf("/") + 1);
           segments.forEach((seg) => {
             const segUrl = seg.startsWith("http") ? seg : baseUrl + seg;
-            fetch(segUrl, { cache: "force-cache" }).catch(() => {});
+            fetch(segUrl, { cache: "force-cache" }).catch(() => { });
           });
         })
-        .catch(() => {});
+        .catch(() => { });
     });
   }, [slides, activeSlides]);
 
@@ -723,11 +723,11 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
       } catch (err) {
         console.warn("[Methodology] Error fetching presentation from backend, using default fallback:", err);
         if (isMounted) {
-            document.title = "3D Bharat - To Achieve Precise Work Progress Monitoring";
+          document.title = "3D Bharat - To Achieve Precise Work Progress Monitoring";
         }
       } finally {
         if (isMounted) {
-          }
+        }
       }
     };
 
@@ -781,7 +781,7 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
       // Automatically transition slides to full screen after 5 seconds
       setIsFullScreen(true);
       if (slideshowRef.current?.requestFullscreen) {
-        slideshowRef.current.requestFullscreen().catch(() => {});
+        slideshowRef.current.requestFullscreen().catch(() => { });
       } else if (slideshowRef.current?.webkitRequestFullscreen) {
         slideshowRef.current.webkitRequestFullscreen();
       }
@@ -861,7 +861,7 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
     if (!document.fullscreenElement && !isFullScreen) {
       setIsFullScreen(true);
       if (slideshowRef.current?.requestFullscreen) {
-        slideshowRef.current.requestFullscreen().catch(() => {});
+        slideshowRef.current.requestFullscreen().catch(() => { });
       } else if (slideshowRef.current?.webkitRequestFullscreen) {
         slideshowRef.current.webkitRequestFullscreen();
       }
@@ -869,7 +869,7 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
       setIsFullScreen(false);
       if (document.fullscreenElement) {
         if (document.exitFullscreen) {
-          document.exitFullscreen().catch(() => {});
+          document.exitFullscreen().catch(() => { });
         } else if (document.webkitExitFullscreen) {
           document.webkitExitFullscreen();
         }
@@ -1741,11 +1741,10 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
                   )}
                 </div>
                 <div
-                  className={`font-mono text-[10px] p-2 rounded-lg border break-all select-all leading-relaxed ${
-                    currentSlide.audio_location
+                  className={`font-mono text-[10px] p-2 rounded-lg border break-all select-all leading-relaxed ${currentSlide.audio_location
                       ? "text-sky-600 dark:text-sky-400 bg-sky-500/5 dark:bg-sky-500/10 border-sky-500/20"
                       : "text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-white/5 border-gray-200 dark:border-white/10"
-                  }`}
+                    }`}
                   title={currentSlide.audio_location || "None (Static)"}
                 >
                   {currentSlide.audio_location || "None (Static)"}
@@ -1786,90 +1785,90 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
         {/* 1. Explore 3D Bharat Header Bar (Clean, Compact, Above Slideshow) - Hidden in Fullscreen */}
         {!isFullScreen && (
           <div className="w-full shrink-0 mb-1.5">
-          <div className="w-full flex items-center justify-between gap-2 bg-white/85 dark:bg-neutral-900/85 backdrop-blur-xl border border-gray-200 dark:border-white/10 py-1.5 px-3 sm:px-4 rounded-xl shadow-sm">
-            <div className="flex items-center gap-2">
-              {/* Optional onBack button to return to domain cards / categories */}
-              {onBack && (
+            <div className="w-full flex items-center justify-between gap-2 bg-white/85 dark:bg-neutral-900/85 backdrop-blur-xl border border-gray-200 dark:border-white/10 py-1.5 px-3 sm:px-4 rounded-xl shadow-sm">
+              <div className="flex items-center gap-2">
+                {/* Optional onBack button to return to domain cards / categories */}
+                {onBack && (
+                  <button
+                    type="button"
+                    onClick={onBack}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-gray-700 dark:text-gray-200 bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 border border-gray-300/80 dark:border-white/15 transition-all duration-200 hover:scale-[1.02] active:scale-95 cursor-pointer mr-0.5 shrink-0"
+                    title={backButtonLabel || "Back"}
+                    aria-label={backButtonLabel || "Back"}
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5 text-amber-500" />
+                    <span className="hidden sm:inline">{backButtonLabel || "Back"}</span>
+                    <span className="sm:hidden">Back</span>
+                  </button>
+                )}
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-orange-500 to-emerald-500 flex items-center justify-center text-white shadow-sm shadow-orange-500/20 shrink-0">
+                  <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                </div>
+                <h2 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white leading-tight">
+                  {presentationHeader?.web_ppt_name || "3DB Approach"}
+                </h2>
+              </div>
+
+              {/* Action Buttons: View Document, Download Brochure, SignUp */}
+              <div className="flex items-center gap-2">
+                <a
+                  href={documents && documents.length > 0 && documents[0].doc_location ? documents[0].doc_location : "/3D-Bharat-Document.pdf"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg font-semibold text-xs text-gray-800 dark:text-white bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 border border-gray-300 dark:border-white/20 shadow-sm transition-all duration-200 hover:scale-[1.02] active:scale-95"
+                >
+                  <Eye className="w-3.5 h-3.5 text-emerald-500" />
+                  <span className="hidden sm:inline">Document</span>
+                  <span className="sm:hidden">View</span>
+                </a>
+
+                {/* Connect with us Button -> Opens ConnectModal popup (Light, soft color flow) */}
                 <button
                   type="button"
-                  onClick={onBack}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-gray-700 dark:text-gray-200 bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 border border-gray-300/80 dark:border-white/15 transition-all duration-200 hover:scale-[1.02] active:scale-95 cursor-pointer mr-0.5 shrink-0"
-                  title={backButtonLabel || "Back"}
-                  aria-label={backButtonLabel || "Back"}
+                  onClick={() => setIsConnectModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-lg font-bold text-xs text-white bg-gradient-to-r from-orange-400 via-amber-400 to-emerald-400 hover:opacity-95 shadow-sm shadow-orange-400/20 border border-white/20 drop-shadow-[0_1px_1px_rgba(0,0,0,0.25)] transition-all duration-200 hover:scale-[1.02] active:scale-95 cursor-pointer"
+                  title="Connect with us"
+                  aria-label="Connect with us"
                 >
-                  <ArrowLeft className="w-3.5 h-3.5 text-amber-500" />
-                  <span className="hidden sm:inline">{backButtonLabel || "Back"}</span>
-                  <span className="sm:hidden">Back</span>
+                  <MessageSquare className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Connect with us</span>
+                  <span className="sm:hidden">Connect</span>
                 </button>
-              )}
-              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-orange-500 to-emerald-500 flex items-center justify-center text-white shadow-sm shadow-orange-500/20 shrink-0">
-                <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              </div>
-              <h2 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white leading-tight">
-                {presentationHeader?.web_ppt_name || "3DB Approach"}
-              </h2>
-            </div>
 
-            {/* Action Buttons: View Document, Download Brochure, SignUp */}
-            <div className="flex items-center gap-2">
-              <a
-                href={documents && documents.length > 0 && documents[0].doc_location ? documents[0].doc_location : "/3D-Bharat-Document.pdf"}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg font-semibold text-xs text-gray-800 dark:text-white bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 border border-gray-300 dark:border-white/20 shadow-sm transition-all duration-200 hover:scale-[1.02] active:scale-95"
-              >
-                <Eye className="w-3.5 h-3.5 text-emerald-500" />
-                <span className="hidden sm:inline">Document</span>
-                <span className="sm:hidden">View</span>
-              </a>
-
-              {/* Connect with us Button -> Opens ConnectModal popup (Light, soft color flow) */}
-              <button
-                type="button"
-                onClick={() => setIsConnectModalOpen(true)}
-                className="inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-lg font-bold text-xs text-white bg-gradient-to-r from-orange-400 via-amber-400 to-emerald-400 hover:opacity-95 shadow-sm shadow-orange-400/20 border border-white/20 drop-shadow-[0_1px_1px_rgba(0,0,0,0.25)] transition-all duration-200 hover:scale-[1.02] active:scale-95 cursor-pointer"
-                title="Connect with us"
-                aria-label="Connect with us"
-              >
-                <MessageSquare className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Connect with us</span>
-                <span className="sm:hidden">Connect</span>
-              </button>
-
-              {/* Compact Glowing SignUp Button with Clean Hover Info */}
-              <motion.button
-                type="button"
-                onClick={openLoginModal}
-                whileHover={{ scale: 1.04 }}
-                whileTap={{ scale: 0.97 }}
-                transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                className="relative inline-block group cursor-pointer select-none shrink-0"
-                title="To download our demo application"
-                aria-label="SignUp - To download our demo application"
-              >
-                <div
-                  className="absolute -inset-0.5 rounded-full opacity-60 dark:opacity-75 blur-sm group-hover:opacity-90 dark:group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-r from-[#FF7A00] via-[#FF9900]/30 to-[#00E676] pointer-events-none"
-                  aria-hidden="true"
-                />
-                <div className="relative rounded-full p-[1px] bg-gradient-to-r from-[#FF7A00] via-[#A3C038]/60 to-[#00E676] shadow-[-3px_0_8px_rgba(255,122,0,0.2),3px_0_8px_rgba(0,230,118,0.2)]">
-                  <div className="relative rounded-full px-2 py-0.5 bg-white/90 dark:bg-gradient-to-r dark:from-[#2e1d10]/85 dark:via-[#1c2430]/85 dark:to-[#0f2c1d]/85 backdrop-blur-2xl flex items-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.9),inset_0_-1px_1px_rgba(0,0,0,0.06)] dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),inset_0_-1px_2px_rgba(0,0,0,0.35)] transition-colors duration-300">
-                    <div className="w-4.5 h-4.5 rounded-full bg-gradient-to-br from-[#FF6B00] via-[#FF8500] to-[#00A859] p-0.5 shadow-[0_0_4px_rgba(255,107,0,0.4)] flex items-center justify-center shrink-0">
-                      <User className="w-2.5 h-2.5 text-white fill-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.35)]" />
-                    </div>
-                    <div className="w-[1px] h-3 bg-gray-300 dark:bg-white/20 rounded-full mx-1.5 shrink-0" />
-                    <span className="text-gray-900 dark:text-white font-extrabold text-[11px] tracking-wider uppercase select-none mr-1.5">
-                      {isAuthenticated ? (user?.user_name ? user.user_name.split(" ")[0] : "Account") : "SignUp"}
-                    </span>
-                    <div className="w-4.5 h-4.5 rounded-full bg-gray-100/90 dark:bg-white/10 border border-gray-200/80 dark:border-white/20 backdrop-blur-md flex items-center justify-center shrink-0 transition-all duration-300 group-hover:bg-gray-200 dark:group-hover:bg-white/20 group-hover:border-gray-300 dark:group-hover:border-white/30 shadow-[0_0_4px_rgba(0,230,118,0.18)]">
-                      <ArrowRight className="w-2.5 h-2.5 text-gray-800 dark:text-white transition-transform duration-300 group-hover:translate-x-0.5" strokeWidth={2.5} />
+                {/* Compact Glowing SignUp Button with Clean Hover Info */}
+                <motion.button
+                  type="button"
+                  onClick={openLoginModal}
+                  whileHover={{ scale: 1.04 }}
+                  whileTap={{ scale: 0.97 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                  className="relative inline-block group cursor-pointer select-none shrink-0"
+                  title="To download our demo application"
+                  aria-label="SignUp - To download our demo application"
+                >
+                  <div
+                    className="absolute -inset-0.5 rounded-full opacity-60 dark:opacity-75 blur-sm group-hover:opacity-90 dark:group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-r from-[#FF7A00] via-[#FF9900]/30 to-[#00E676] pointer-events-none"
+                    aria-hidden="true"
+                  />
+                  <div className="relative rounded-full p-[1px] bg-gradient-to-r from-[#FF7A00] via-[#A3C038]/60 to-[#00E676] shadow-[-3px_0_8px_rgba(255,122,0,0.2),3px_0_8px_rgba(0,230,118,0.2)]">
+                    <div className="relative rounded-full px-2 py-0.5 bg-white/90 dark:bg-gradient-to-r dark:from-[#2e1d10]/85 dark:via-[#1c2430]/85 dark:to-[#0f2c1d]/85 backdrop-blur-2xl flex items-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.9),inset_0_-1px_1px_rgba(0,0,0,0.06)] dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),inset_0_-1px_2px_rgba(0,0,0,0.35)] transition-colors duration-300">
+                      <div className="w-4.5 h-4.5 rounded-full bg-gradient-to-br from-[#FF6B00] via-[#FF8500] to-[#00A859] p-0.5 shadow-[0_0_4px_rgba(255,107,0,0.4)] flex items-center justify-center shrink-0">
+                        <User className="w-2.5 h-2.5 text-white fill-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.35)]" />
+                      </div>
+                      <div className="w-[1px] h-3 bg-gray-300 dark:bg-white/20 rounded-full mx-1.5 shrink-0" />
+                      <span className="text-gray-900 dark:text-white font-extrabold text-[11px] tracking-wider uppercase select-none mr-1.5">
+                        {isAuthenticated ? (user?.user_name ? user.user_name.split(" ")[0] : "Account") : "SignUp"}
+                      </span>
+                      <div className="w-4.5 h-4.5 rounded-full bg-gray-100/90 dark:bg-white/10 border border-gray-200/80 dark:border-white/20 backdrop-blur-md flex items-center justify-center shrink-0 transition-all duration-300 group-hover:bg-gray-200 dark:group-hover:bg-white/20 group-hover:border-gray-300 dark:group-hover:border-white/30 shadow-[0_0_4px_rgba(0,230,118,0.18)]">
+                        <ArrowRight className="w-2.5 h-2.5 text-gray-800 dark:text-white transition-transform duration-300 group-hover:translate-x-0.5" strokeWidth={2.5} />
+                      </div>
                     </div>
                   </div>
-                </div>
 
-              </motion.button>
+                </motion.button>
+              </div>
             </div>
           </div>
-        </div>
         )}
 
         {/* 2. Main Slideshow Display (Constrained height with top-left logo & top-right green/blue health dot) */}
@@ -2007,9 +2006,8 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
 
                     {/* Sleek, Modern Cinematic Video Playbar Overlay */}
                     <div
-                      className={`absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent pt-12 pb-3 px-4 sm:px-6 z-30 transition-all duration-300 pointer-events-auto rounded-b-xl ${
-                        isVideoControlsVisible || isPaused ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"
-                      }`}
+                      className={`absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent pt-12 pb-3 px-4 sm:px-6 z-30 transition-all duration-300 pointer-events-auto rounded-b-xl ${isVideoControlsVisible || isPaused ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"
+                        }`}
                       onClick={(e) => e.stopPropagation()}
                     >
                       {/* Interactive Scrubber Seekbar Track */}
@@ -2019,9 +2017,8 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
                           <div
                             className="h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full transition-all duration-75"
                             style={{
-                              width: `${
-                                Math.min(100, Math.max(0, ((videoProgress.currentTime || 0) / (videoProgress.duration > 0 ? videoProgress.duration : 1)) * 100))
-                              }%`,
+                              width: `${Math.min(100, Math.max(0, ((videoProgress.currentTime || 0) / (videoProgress.duration > 0 ? videoProgress.duration : 1)) * 100))
+                                }%`,
                             }}
                           />
                         </div>
@@ -2051,9 +2048,8 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
                         <div
                           className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-white rounded-full shadow-[0_0_10px_rgba(245,158,11,0.9)] border-2 border-amber-500 pointer-events-none transition-transform duration-150 scale-0 group-hover/seek:scale-100"
                           style={{
-                            left: `${
-                              Math.min(100, Math.max(0, ((videoProgress.currentTime || 0) / (videoProgress.duration > 0 ? videoProgress.duration : 1)) * 100))
-                            }%`,
+                            left: `${Math.min(100, Math.max(0, ((videoProgress.currentTime || 0) / (videoProgress.duration > 0 ? videoProgress.duration : 1)) * 100))
+                              }%`,
                           }}
                         />
                       </div>
@@ -2106,11 +2102,10 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
                           <button
                             type="button"
                             onClick={toggleCaptions}
-                            className={`px-2.5 py-1 rounded-md font-bold text-[11px] tracking-wider transition-all cursor-pointer hover:scale-105 active:scale-95 ${
-                              isCaptionsOn
+                            className={`px-2.5 py-1 rounded-md font-bold text-[11px] tracking-wider transition-all cursor-pointer hover:scale-105 active:scale-95 ${isCaptionsOn
                                 ? "bg-amber-400 text-black font-black shadow-[0_0_12px_rgba(251,191,36,0.6)]"
                                 : "bg-white/10 text-white/60 hover:text-white hover:bg-white/20 border border-white/15"
-                            }`}
+                              }`}
                             title={isCaptionsOn ? "Captions (CC) ON" : "Captions (CC) OFF"}
                           >
                             CC
@@ -2200,9 +2195,8 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
 
                     {/* Sleek, Modern Cinematic Video Playbar Overlay */}
                     <div
-                      className={`absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent pt-12 pb-3 px-4 sm:px-6 z-30 transition-all duration-300 pointer-events-auto rounded-b-xl ${
-                        isVideoControlsVisible || isPaused ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"
-                      }`}
+                      className={`absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent pt-12 pb-3 px-4 sm:px-6 z-30 transition-all duration-300 pointer-events-auto rounded-b-xl ${isVideoControlsVisible || isPaused ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"
+                        }`}
                       onClick={(e) => e.stopPropagation()}
                     >
                       {/* Interactive Scrubber Seekbar Track */}
@@ -2212,9 +2206,8 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
                           <div
                             className="h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full transition-all duration-75"
                             style={{
-                              width: `${
-                                Math.min(100, Math.max(0, ((videoProgress.currentTime || 0) / (videoProgress.duration > 0 ? videoProgress.duration : 1)) * 100))
-                              }%`,
+                              width: `${Math.min(100, Math.max(0, ((videoProgress.currentTime || 0) / (videoProgress.duration > 0 ? videoProgress.duration : 1)) * 100))
+                                }%`,
                             }}
                           />
                         </div>
@@ -2244,9 +2237,8 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
                         <div
                           className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-white rounded-full shadow-[0_0_10px_rgba(245,158,11,0.9)] border-2 border-amber-500 pointer-events-none transition-transform duration-150 scale-0 group-hover/seek:scale-100"
                           style={{
-                            left: `${
-                              Math.min(100, Math.max(0, ((videoProgress.currentTime || 0) / (videoProgress.duration > 0 ? videoProgress.duration : 1)) * 100))
-                            }%`,
+                            left: `${Math.min(100, Math.max(0, ((videoProgress.currentTime || 0) / (videoProgress.duration > 0 ? videoProgress.duration : 1)) * 100))
+                              }%`,
                           }}
                         />
                       </div>
