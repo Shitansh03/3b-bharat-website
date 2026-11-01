@@ -53,6 +53,262 @@ export const IMAGE_PAUSE_TIMES = {
 // 1 minute (60s) pause timer for all image slides
 export const PAUSE_TIMER_SECONDS = 60;
 
+/**
+ * Helper to detect YouTube URLs and extract the 11-character video ID.
+ * Supports standard watch, youtu.be, shorts, embeds, and query parameters.
+ */
+export const extractYouTubeId = (url) => {
+  if (!url || typeof url !== "string") return null;
+  const trimmed = url.trim();
+  const pattern = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=|shorts\/)|youtu\.be\/)([^"&?\/\s]{11})/i;
+  const match = trimmed.match(pattern);
+  return match ? match[1] : null;
+};
+
+// Pre-warm and preload YouTube IFrame API script immediately on module load so video starts fast
+if (typeof window !== "undefined") {
+  ["https://www.youtube.com", "https://i.ytimg.com", "https://s.ytimg.com"].forEach((domain) => {
+    if (!document.querySelector(`link[rel="preconnect"][href="${domain}"]`)) {
+      const link = document.createElement("link");
+      link.rel = "preconnect";
+      link.href = domain;
+      link.crossOrigin = "anonymous";
+      document.head.appendChild(link);
+    }
+  });
+
+  if (!window.YT && !document.getElementById("youtube-iframe-api")) {
+    const tag = document.createElement("script");
+    tag.id = "youtube-iframe-api";
+    tag.src = "https://www.youtube.com/iframe_api";
+    tag.async = true;
+    document.head.appendChild(tag);
+  }
+}
+
+/**
+ * Dedicated YouTube Slide Player for "Our Approach"
+ * Embedded seamlessly in the exact same container with full playback, mute, and timer synchronization.
+ */
+const YouTubeSlidePlayer = ({
+  slide,
+  youtubeId,
+  isPaused,
+  isMuted,
+  ytPlayerRef,
+  onDuration,
+  onTimeUpdate,
+  onPlayStateChange,
+  onEnded,
+}) => {
+  const wrapperRef = useRef(null);
+  const playerInstanceRef = useRef(null);
+  const timeIntervalRef = useRef(null);
+  const [isReady, setIsReady] = useState(false);
+
+  // Load YouTube IFrame API script once globally
+  useEffect(() => {
+    if (!window.YT) {
+      const existingScript = document.getElementById("youtube-iframe-api");
+      if (!existingScript) {
+        const tag = document.createElement("script");
+        tag.id = "youtube-iframe-api";
+        tag.src = "https://www.youtube.com/iframe_api";
+        document.body.appendChild(tag);
+      }
+    }
+  }, []);
+
+  // Initialize YouTube Player instance
+  useEffect(() => {
+    let isCancelled = false;
+
+    const createPlayer = () => {
+      if (isCancelled || !wrapperRef.current || !window.YT || !window.YT.Player) return;
+
+      // Clean up previous instance
+      if (playerInstanceRef.current) {
+        try {
+          playerInstanceRef.current.destroy();
+        } catch (e) {}
+        playerInstanceRef.current = null;
+      }
+
+      // Re-create inner DOM node so YouTube iframe replacement doesn't break React DOM
+      wrapperRef.current.innerHTML = "";
+      const playerDiv = document.createElement("div");
+      playerDiv.className = "w-full h-full";
+      wrapperRef.current.appendChild(playerDiv);
+
+      try {
+        const player = new window.YT.Player(playerDiv, {
+          videoId: youtubeId,
+          width: "100%",
+          height: "100%",
+          playerVars: {
+            autoplay: 1,
+            controls: 0,
+            rel: 0,
+            modestbranding: 1,
+            playsinline: 1,
+            enablejsapi: 1,
+            cc_load_policy: 1,
+            iv_load_policy: 3,
+            fs: 0,
+            disablekb: 1,
+            origin: window.location.origin,
+          },
+          events: {
+            onReady: (event) => {
+              if (isCancelled) return;
+              setIsReady(true);
+              playerInstanceRef.current = event.target;
+              if (ytPlayerRef) ytPlayerRef.current = event.target;
+
+              try {
+                event.target.loadModule?.("captions");
+                const tracks = event.target.getOption?.("captions", "trackList");
+                if (tracks && tracks.length > 0) {
+                  event.target.setOption?.("captions", "track", tracks[0]);
+                }
+              } catch (e) {}
+
+              if (isMuted) {
+                event.target.mute();
+              } else {
+                event.target.unMute();
+              }
+
+              const dur = event.target.getDuration?.();
+              if (dur && !isNaN(dur) && dur > 0) {
+                onDuration(Math.ceil(dur));
+              }
+
+              if (!isPaused) {
+                event.target.playVideo();
+              } else {
+                event.target.pauseVideo();
+              }
+            },
+            onStateChange: (event) => {
+              if (isCancelled) return;
+              // YT.PlayerState: -1 (UNSTARTED), 0 (ENDED), 1 (PLAYING), 2 (PAUSED), 3 (BUFFERING), 5 (CUED)
+              if (event.data === 0) {
+                if (timeIntervalRef.current) clearInterval(timeIntervalRef.current);
+                onEnded();
+              } else if (event.data === 1) {
+                onPlayStateChange(false);
+                const dur = event.target.getDuration?.();
+                if (dur && !isNaN(dur) && dur > 0) {
+                  onDuration(Math.ceil(dur));
+                }
+                if (timeIntervalRef.current) clearInterval(timeIntervalRef.current);
+                timeIntervalRef.current = setInterval(() => {
+                  if (isCancelled) return;
+                  try {
+                    const cur = event.target.getCurrentTime?.() || 0;
+                    const total = event.target.getDuration?.() || 0;
+                    onTimeUpdate(cur, total);
+                  } catch (e) {}
+                }, 250);
+              } else if (event.data === 2) {
+                if (timeIntervalRef.current) clearInterval(timeIntervalRef.current);
+                onPlayStateChange(true);
+              }
+            },
+          },
+        });
+
+        // Store immediately in refs
+        playerInstanceRef.current = player;
+        if (ytPlayerRef) ytPlayerRef.current = player;
+      } catch (err) {
+        console.warn("[YouTube Player] Error initializing player:", err);
+      }
+    };
+
+    if (window.YT && window.YT.Player) {
+      createPlayer();
+    } else {
+      const prevCallback = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = () => {
+        if (typeof prevCallback === "function") prevCallback();
+        createPlayer();
+      };
+
+      const checkInterval = setInterval(() => {
+        if (window.YT && window.YT.Player) {
+          clearInterval(checkInterval);
+          createPlayer();
+        }
+      }, 100);
+
+      return () => {
+        isCancelled = true;
+        clearInterval(checkInterval);
+        if (timeIntervalRef.current) clearInterval(timeIntervalRef.current);
+        if (playerInstanceRef.current) {
+          try {
+            playerInstanceRef.current.destroy();
+          } catch (e) {}
+        }
+      };
+    }
+
+    return () => {
+      isCancelled = true;
+      if (timeIntervalRef.current) clearInterval(timeIntervalRef.current);
+      if (playerInstanceRef.current) {
+        try {
+          playerInstanceRef.current.destroy();
+        } catch (e) {}
+        playerInstanceRef.current = null;
+      }
+    };
+  }, [youtubeId]);
+
+  // Synchronize play / pause with global presentation state
+  useEffect(() => {
+    const player = playerInstanceRef.current;
+    if (!player) return;
+    try {
+      if (isPaused) {
+        player.pauseVideo?.();
+      } else {
+        player.playVideo?.();
+      }
+    } catch (e) {}
+  }, [isPaused]);
+
+  // Synchronize mute / unmute with global presentation state
+  useEffect(() => {
+    const player = playerInstanceRef.current;
+    if (!player) return;
+    try {
+      if (isMuted) {
+        player.mute?.();
+      } else {
+        player.unMute?.();
+      }
+    } catch (e) {}
+  }, [isMuted]);
+
+  return (
+    <div className="w-full h-full max-w-full max-h-full flex items-center justify-center p-0 relative">
+      <div className="relative w-full h-full max-w-full max-h-full aspect-video rounded-lg overflow-hidden shadow-2xl bg-black flex items-center justify-center">
+        {!isReady && (
+          <img
+            src={`https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`}
+            alt="Video Preview"
+            className="absolute inset-0 w-full h-full object-cover z-0"
+          />
+        )}
+        <div ref={wrapperRef} className="w-full h-full pointer-events-none relative z-10" />
+      </div>
+    </div>
+  );
+};
+
 const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel = null }) => {
   const navigate = useNavigate();
   const { openModal: openLoginModal } = useLoginModal();
@@ -110,6 +366,9 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
 
   // Current active slide object (initialized early for callback references)
   const currentSlide = activeSlides[currentIndex] || activeSlides[0] || {};
+  const currentYouTubeId = currentSlide?.youtube_id || extractYouTubeId(currentSlide?.video_location || currentSlide?.location || currentSlide?.fallback_location);
+  const isCurrentSlideYouTube = (currentSlide?.type === 2 || currentSlide?.slide_type === 2) && Boolean(currentSlide?.is_youtube || currentYouTubeId);
+
   const [isPaused, setIsPaused] = useState(false);
   const [timeLeft, setTimeLeft] = useState(DEFAULT_AUTO_PLAY_SECONDS);
   // 1-minute pause timer state (runs when user pauses an image slide)
@@ -135,13 +394,97 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
 
   const slideshowRef = useRef(null);
   const videoRef = useRef(null);
+  const ytPlayerRef = useRef(null);
   // Active HLS instance reference
   const hlsRef = useRef(null);
   const audioRef = useRef(null);
 
+  // Dedicated Video playback and timeline seekbar state
+  const [videoProgress, setVideoProgress] = useState({ currentTime: 0, duration: 0 });
+  const [isSeeking, setIsSeeking] = useState(false);
+  const seekLockUntilRef = useRef(0);
+  const [isVideoControlsVisible, setIsVideoControlsVisible] = useState(true);
+  const videoControlsTimerRef = useRef(null);
+  const [isCaptionsOn, setIsCaptionsOn] = useState(true);
+
+  const formatVideoTime = useCallback((seconds) => {
+    if (!seconds || isNaN(seconds) || seconds < 0) return "0:00";
+    const totalSec = Math.floor(seconds);
+    const mins = Math.floor(totalSec / 60);
+    const secs = totalSec % 60;
+    if (mins >= 60) {
+      const hours = Math.floor(mins / 60);
+      const remMins = mins % 60;
+      return `${hours}:${remMins < 10 ? "0" : ""}${remMins}:${secs < 10 ? "0" : ""}${secs}`;
+    }
+    return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
+  }, []);
+
+  const handleVideoSeek = useCallback((newTime) => {
+    const time = Math.max(0, parseFloat(newTime) || 0);
+    seekLockUntilRef.current = Date.now() + 1200;
+    setVideoProgress((prev) => ({ ...prev, currentTime: time }));
+
+    if (isCurrentSlideYouTube && ytPlayerRef.current) {
+      try {
+        ytPlayerRef.current.seekTo?.(time, true);
+        if (!isPaused) {
+          ytPlayerRef.current.playVideo?.();
+        }
+      } catch (err) {
+        console.warn("[YouTube Seek Error]:", err);
+      }
+    } else if (videoRef.current) {
+      try {
+        videoRef.current.currentTime = time;
+        if (!isPaused) {
+          videoRef.current.play().catch(() => {});
+        }
+      } catch (err) {}
+    }
+  }, [isCurrentSlideYouTube, isPaused]);
+
+  const toggleCaptions = useCallback(() => {
+    const player = ytPlayerRef.current;
+    if (isCurrentSlideYouTube && player) {
+      try {
+        if (isCaptionsOn) {
+          try { player.unloadModule?.("captions"); } catch (e) {}
+          try { player.setOption?.("captions", "track", {}); } catch (e) {}
+          setIsCaptionsOn(false);
+        } else {
+          try { player.loadModule?.("captions"); } catch (e) {}
+          try {
+            const trackList = player.getOption?.("captions", "trackList");
+            if (trackList && trackList.length > 0) {
+              player.setOption?.("captions", "track", trackList[0]);
+            } else {
+              player.setOption?.("captions", "track", { languageCode: "en" });
+            }
+          } catch (e) {}
+          setIsCaptionsOn(true);
+        }
+      } catch (e) {
+        setIsCaptionsOn((prev) => !prev);
+      }
+    }
+  }, [isCurrentSlideYouTube, isCaptionsOn]);
+
+  const handleVideoMouseMove = useCallback(() => {
+    setIsVideoControlsVisible(true);
+    if (videoControlsTimerRef.current) clearTimeout(videoControlsTimerRef.current);
+    videoControlsTimerRef.current = setTimeout(() => {
+      setIsVideoControlsVisible(false);
+    }, 3500);
+  }, []);
+
   // Helper to reliably construct first-frame poster image URL for video slide thumbnails
   const getVideoPosterUrl = useCallback((slide) => {
     if (!slide) return null;
+    const ytId = slide.youtube_id || extractYouTubeId(slide.video_location || slide.location || slide.fallback_location);
+    if (ytId) {
+      return `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
+    }
     const raw = slide.poster_location || slide.thumbnail || slide.poster || slide.image_location;
     if (raw && typeof raw === "string" && raw.trim().length > 0) {
       if (raw.includes("localhost:3000/server")) {
@@ -163,7 +506,8 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
   const attachVideoSource = useCallback((videoElement, slide) => {
     if (!videoElement || !slide) return;
     const isVideoSlide = slide.type === 2 || slide.slide_type === 2;
-    if (!isVideoSlide) return;
+    const isYt = slide.is_youtube || extractYouTubeId(slide.video_location || slide.location || slide.fallback_location);
+    if (!isVideoSlide || isYt) return;
 
     const hlsSource = slide.hls_location || (slide.location?.includes(".m3u8") ? slide.location : null);
     const fallbackSource = slide.fallback_location || slide.video_location || slide.location;
@@ -253,6 +597,8 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
     if (allVideoSlides.length === 0) return;
 
     allVideoSlides.forEach((vSlide) => {
+      const isYt = vSlide.is_youtube || extractYouTubeId(vSlide.video_location || vSlide.location || vSlide.fallback_location);
+      if (isYt) return;
       const playlistUrl = vSlide.hls_location || (vSlide.location?.includes(".m3u8") ? vSlide.location : null);
       if (!playlistUrl) return;
 
@@ -293,6 +639,13 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
       audioRef.current.volume = effectiveVolume;
       audioRef.current.muted = isMuted;
     }
+    if (ytPlayerRef.current) {
+      if (isMuted) {
+        ytPlayerRef.current.mute?.();
+      } else {
+        ytPlayerRef.current.unMute?.();
+      }
+    }
   }, [isMuted, currentIndex]);
 
   const prevMutedRef = useRef(isMuted);
@@ -314,16 +667,24 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
         audioRef.current.currentTime = 0;
         audioRef.current.muted = false;
         audioRef.current.play().catch(() => { });
-      } else if (currentSlide.type === 2 && videoRef.current) {
-        videoRef.current.currentTime = 0;
-        videoRef.current.muted = false;
-        if (!isPaused) {
-          videoRef.current.play().catch(() => { });
+      } else if (currentSlide.type === 2) {
+        if (isCurrentSlideYouTube && ytPlayerRef.current) {
+          ytPlayerRef.current.seekTo?.(0);
+          ytPlayerRef.current.unMute?.();
+          if (!isPaused) {
+            ytPlayerRef.current.playVideo?.();
+          }
+        } else if (videoRef.current) {
+          videoRef.current.currentTime = 0;
+          videoRef.current.muted = false;
+          if (!isPaused) {
+            videoRef.current.play().catch(() => { });
+          }
         }
       }
     }
     prevMutedRef.current = isMuted;
-  }, [isMuted, currentSlide, isPaused, currentIndex]);
+  }, [isMuted, currentSlide, isPaused, currentIndex, isCurrentSlideYouTube]);
 
   // Total duration reference for the circular percentage calculation (supports video and image slides)
   const totalDuration = currentSlide.type === 2
@@ -559,6 +920,8 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
     setCurrentIndex(newIndex);
     setIsPaused(false);
     setShowCompletionModal(false);
+    setVideoProgress({ currentTime: 0, duration: 0 });
+    setIsVideoControlsVisible(true);
     setPauseTimeLeft(PAUSE_TIMER_SECONDS);
     const targetSlide = activeSlides[newIndex] || activeSlides[0];
     const initialTime = targetSlide?.type === 2
@@ -714,9 +1077,14 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
       : (currentSlide.ideal_time || DEFAULT_AUTO_PLAY_SECONDS);
     setTimeLeft(duration);
 
-    if (currentSlide.type === 2 && videoRef.current) {
-      videoRef.current.currentTime = 0;
-      videoRef.current.play().catch(() => { });
+    if (currentSlide.type === 2) {
+      if (isCurrentSlideYouTube && ytPlayerRef.current) {
+        ytPlayerRef.current.seekTo?.(0);
+        ytPlayerRef.current.playVideo?.();
+      } else if (videoRef.current) {
+        videoRef.current.currentTime = 0;
+        videoRef.current.play().catch(() => { });
+      }
     }
 
     if (currentSlide.type === 1 && audioRef.current) {
@@ -724,7 +1092,7 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
       audioRef.current.muted = isMuted;
       audioRef.current.play().catch(() => { });
     }
-  }, [currentSlide, isMuted]);
+  }, [currentSlide, isMuted, isCurrentSlideYouTube]);
 
   // Proceed to next slide from completion modal
   const handleNextFromModal = useCallback(() => {
@@ -741,8 +1109,12 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
       setIsPaused(false);
       setShowCompletionModal(false);
       setPauseTimeLeft(PAUSE_TIMER_SECONDS);
-      if (currentSlide.type === 2 && videoRef.current) {
-        videoRef.current.play().catch(() => { });
+      if (currentSlide.type === 2) {
+        if (isCurrentSlideYouTube && ytPlayerRef.current) {
+          ytPlayerRef.current.playVideo?.();
+        } else if (videoRef.current) {
+          videoRef.current.play().catch(() => { });
+        }
       }
       if (currentSlide.type === 1 && audioRef.current) {
         audioRef.current.muted = isMuted;
@@ -754,12 +1126,16 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
       // Enter pause / hold mode: pause ideal time of image slide, and start 1 min pause timer
       setIsPaused(true);
       setPauseTimeLeft(PAUSE_TIMER_SECONDS);
-      if (currentSlide.type === 2 && videoRef.current) {
-        videoRef.current.pause();
+      if (currentSlide.type === 2) {
+        if (isCurrentSlideYouTube && ytPlayerRef.current) {
+          ytPlayerRef.current.pauseVideo?.();
+        } else if (videoRef.current) {
+          videoRef.current.pause();
+        }
       }
       // For image slides (type === 1): Audio continues playing continuously; user can only mute it manually
     }
-  }, [isPaused, currentSlide, isMuted]);
+  }, [isPaused, currentSlide, isMuted, isCurrentSlideYouTube]);
 
   // Restart audio and ideal time from start for current image slide (triggered by the Audio Restart button)
   const handleRestartAudioAndTimer = useCallback(() => {
@@ -1320,9 +1696,21 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
               <div className="flex justify-between items-center py-1.5 px-3 rounded-lg bg-gray-50 dark:bg-white/5">
                 <span className="text-gray-500 dark:text-gray-400 font-medium shrink-0">Media Type</span>
                 <span className="font-bold text-gray-800 dark:text-white">
-                  {currentSlide.type === 1 ? "Image (Type 1)" : "Video (Type 2)"}
+                  {currentSlide.type === 1
+                    ? "Image (Type 1)"
+                    : isCurrentSlideYouTube
+                      ? "Video (Type 2 - YouTube)"
+                      : "Video (Type 2 - HLS)"}
                 </span>
               </div>
+              {isCurrentSlideYouTube && currentYouTubeId && (
+                <div className="flex justify-between items-center py-1.5 px-3 rounded-lg bg-gray-50 dark:bg-white/5">
+                  <span className="text-gray-500 dark:text-gray-400 font-medium shrink-0">YouTube ID</span>
+                  <span className="font-mono font-bold text-red-500 dark:text-red-400">
+                    {currentYouTubeId}
+                  </span>
+                </div>
+              )}
 
               {/* File Location - Clear dedicated box with complete URL and wrap/break */}
               <div className="py-2 px-3 rounded-lg bg-gray-50 dark:bg-white/5 space-y-1">
@@ -1558,74 +1946,386 @@ const Methodology = ({ pptId: pptIdProp = null, onBack = null, backButtonLabel =
           <div className="w-full h-full flex items-center justify-center overflow-hidden p-2">
             <AnimatePresence mode="wait">
               {currentSlide.type === 2 ? (
-                // Video Slide with Integrated Interactive Video Play Bar (Normal & Fullscreen view)
-                // Previous transition duration 0.35 easeInOut preserved per zero-deletions rule:
-                // transition={{ duration: 0.35, ease: "easeInOut" }}
-                <motion.div
-                  key={`video-${currentIndex}`}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.2, ease: "easeOut" }}
-                  className="w-full h-full flex items-center justify-center relative group"
-                >
-                  <video
-                    ref={(el) => {
-                      videoRef.current = el;
-                      if (el) attachVideoSource(el, currentSlide);
-                    }}
-                    key={`video-${currentIndex}-${currentSlide.hls_location || currentSlide.location}`}
-                    poster={currentSlide.poster_location || currentSlide.thumbnail || currentSlide.image_location}
-                    src={currentSlide.fallback_location || currentSlide.video_location}
-                    autoPlay
-                    playsInline
-                    muted={isMuted}
-                    onLoadedMetadata={(e) => {
-                      const dur = e.currentTarget.duration;
-                      if (dur && !isNaN(dur) && isFinite(dur)) {
-                        setTimeLeft(Math.ceil(dur));
-                      }
-                    }}
-                    onTimeUpdate={(e) => {
-                      const cur = e.currentTarget.currentTime;
-                      const dur = e.currentTarget.duration || currentSlide?.video_duration || 30;
-                      const remaining = Math.max(0, Math.ceil(dur - cur));
-                      if (!isNaN(remaining) && !showCompletionModal && !isPaused) {
-                        setTimeLeft(remaining);
-                      }
-                    }}
-                    onEnded={() => {
-                      setTimeLeft(0);
-                      if (currentIndex < activeSlides.length - 1) {
-                        setIsPaused(false); // Reset pause state so next slide auto-plays immediately
-                        goToSlide(currentIndex + 1);
-                      } else {
-                        setIsPaused(true);
-                        // Check presentationHeader.connect_with_us_popus (1 = yes [open ConnectModal at end of last slide], 2 = no [show completion modal])
-                        if (Number(presentationHeader?.connect_with_us_popus) === 1) {
-                          setIsConnectModalOpen(true);
-                        } else {
-                          setShowCompletionModal(true);
+                isCurrentSlideYouTube ? (
+                  // YouTube Video Slide with Integrated Controls & Duration Tracking
+                  <motion.div
+                    key={`yt-${currentIndex}-${currentYouTubeId}`}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
+                    onMouseMove={handleVideoMouseMove}
+                    className="w-full h-full flex items-center justify-center relative group p-0 overflow-hidden rounded-xl"
+                  >
+                    <YouTubeSlidePlayer
+                      slide={currentSlide}
+                      youtubeId={currentYouTubeId}
+                      isPaused={isPaused}
+                      isMuted={isMuted}
+                      ytPlayerRef={ytPlayerRef}
+                      onDuration={(dur) => {
+                        if (!isNaN(dur) && isFinite(dur) && dur > 0) {
+                          setTimeLeft(dur);
+                          setVideoProgress((prev) => ({ ...prev, duration: Math.ceil(dur) }));
                         }
-                      }
-                    }}
-                    onClick={handleTogglePlayPause}
-                    className="max-w-full max-h-full w-auto h-auto object-contain rounded-lg shadow-2xl cursor-pointer"
-                  />
+                      }}
+                      onTimeUpdate={(cur, dur) => {
+                        if (Date.now() < seekLockUntilRef.current) {
+                          return; // Ignore stale polled currentTime while player buffers new seek point
+                        }
+                        const validDur = (dur && !isNaN(dur) && dur > 0) ? Math.ceil(dur) : null;
+                        if (!isSeeking) {
+                          setVideoProgress((prev) => ({
+                            currentTime: cur,
+                            duration: validDur || (prev.duration > 0 ? prev.duration : (currentSlide?.video_duration || 30)),
+                          }));
+                        }
+                        const totalDur = validDur || (videoProgress.duration > 0 ? videoProgress.duration : (currentSlide?.video_duration || 30));
+                        const remaining = Math.max(0, Math.ceil(totalDur - cur));
+                        if (!isNaN(remaining) && !showCompletionModal && !isPaused) {
+                          setTimeLeft(remaining);
+                        }
+                      }}
+                      onPlayStateChange={(paused) => {
+                        setIsPaused(paused);
+                      }}
+                      onEnded={() => {
+                        setTimeLeft(0);
+                        if (currentIndex < activeSlides.length - 1) {
+                          setIsPaused(false);
+                          goToSlide(currentIndex + 1);
+                        } else {
+                          setIsPaused(true);
+                          if (Number(presentationHeader?.connect_with_us_popus) === 1) {
+                            setIsConnectModalOpen(true);
+                          } else {
+                            setShowCompletionModal(true);
+                          }
+                        }
+                      }}
+                    />
 
-                  {/* Subtle Center Play indicator overlay when paused */}
-                  {isPaused && (
+                    {/* Sleek, Modern Cinematic Video Playbar Overlay */}
                     <div
-                      onClick={handleTogglePlayPause}
-                      className="absolute inset-0 flex items-center justify-center pointer-events-none z-20"
+                      className={`absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent pt-12 pb-3 px-4 sm:px-6 z-30 transition-all duration-300 pointer-events-auto rounded-b-xl ${
+                        isVideoControlsVisible || isPaused ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"
+                      }`}
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      <div className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-xl">
-                        <Play className="w-5 h-5 text-white fill-white ml-0.5" />
+                      {/* Interactive Scrubber Seekbar Track */}
+                      <div className="relative w-full flex items-center group/seek cursor-pointer mb-2.5 py-1">
+                        {/* Track Background */}
+                        <div className="w-full h-1 group-hover/seek:h-2 bg-white/20 rounded-full overflow-hidden transition-all duration-200 relative">
+                          <div
+                            className="h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full transition-all duration-75"
+                            style={{
+                              width: `${
+                                Math.min(100, Math.max(0, ((videoProgress.currentTime || 0) / (videoProgress.duration > 0 ? videoProgress.duration : 1)) * 100))
+                              }%`,
+                            }}
+                          />
+                        </div>
+
+                        {/* Interactive Range Input */}
+                        <input
+                          type="range"
+                          min={0}
+                          max={videoProgress.duration > 0 ? videoProgress.duration : 100}
+                          step={0.1}
+                          value={videoProgress.currentTime || 0}
+                          onPointerDown={() => setIsSeeking(true)}
+                          onPointerUp={(e) => {
+                            setIsSeeking(false);
+                            handleVideoSeek(parseFloat(e.currentTarget.value));
+                          }}
+                          onChange={(e) => {
+                            const val = parseFloat(e.target.value) || 0;
+                            setVideoProgress((prev) => ({ ...prev, currentTime: val }));
+                            handleVideoSeek(val);
+                          }}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                          aria-label="Seek Video"
+                        />
+
+                        {/* Glowing Circular Handle */}
+                        <div
+                          className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-white rounded-full shadow-[0_0_10px_rgba(245,158,11,0.9)] border-2 border-amber-500 pointer-events-none transition-transform duration-150 scale-0 group-hover/seek:scale-100"
+                          style={{
+                            left: `${
+                              Math.min(100, Math.max(0, ((videoProgress.currentTime || 0) / (videoProgress.duration > 0 ? videoProgress.duration : 1)) * 100))
+                            }%`,
+                          }}
+                        />
+                      </div>
+
+                      {/* Controls Bottom Row: Play/Pause, Volume, Time, CC & Fullscreen */}
+                      <div className="flex items-center justify-between text-white select-none">
+                        <div className="flex items-center gap-2.5 sm:gap-3">
+                          {/* Play/Pause */}
+                          <button
+                            type="button"
+                            onClick={handleTogglePlayPause}
+                            className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/15 text-white transition-all cursor-pointer hover:scale-110 active:scale-95"
+                            title={isPaused ? "Play" : "Pause"}
+                          >
+                            {isPaused ? (
+                              <Play className="w-4 h-4 fill-white ml-0.5" />
+                            ) : (
+                              <Pause className="w-4 h-4 fill-white" />
+                            )}
+                          </button>
+
+                          {/* Sound Toggle */}
+                          <button
+                            type="button"
+                            onClick={() => setIsMuted((prev) => !prev)}
+                            className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/15 text-white/90 hover:text-white transition-all cursor-pointer hover:scale-110 active:scale-95"
+                            title={isMuted ? "Unmute" : "Mute"}
+                          >
+                            {isMuted ? (
+                              <VolumeX className="w-4 h-4 text-rose-400" />
+                            ) : (
+                              <Volume2 className="w-4 h-4 text-emerald-400" />
+                            )}
+                          </button>
+
+                          {/* Digital Timestamp Display */}
+                          <div className="flex items-center text-xs font-mono tracking-tight font-medium ml-1">
+                            <span className="text-white font-semibold">
+                              {formatVideoTime(videoProgress.currentTime)}
+                            </span>
+                            <span className="text-white/40 mx-1.5 font-normal">/</span>
+                            <span className="text-white/60">
+                              {formatVideoTime(videoProgress.duration)}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          {/* Subtitles / CC Toggle */}
+                          <button
+                            type="button"
+                            onClick={toggleCaptions}
+                            className={`px-2.5 py-1 rounded-md font-bold text-[11px] tracking-wider transition-all cursor-pointer hover:scale-105 active:scale-95 ${
+                              isCaptionsOn
+                                ? "bg-amber-400 text-black font-black shadow-[0_0_12px_rgba(251,191,36,0.6)]"
+                                : "bg-white/10 text-white/60 hover:text-white hover:bg-white/20 border border-white/15"
+                            }`}
+                            title={isCaptionsOn ? "Captions (CC) ON" : "Captions (CC) OFF"}
+                          >
+                            CC
+                          </button>
+
+                          {/* Fullscreen Button */}
+                          <button
+                            type="button"
+                            onClick={toggleFullScreen}
+                            className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/15 text-white/90 hover:text-white transition-all cursor-pointer hover:scale-110 active:scale-95"
+                            title={isFullScreen ? "Exit Fullscreen" : "Fullscreen"}
+                          >
+                            {isFullScreen ? (
+                              <Minimize2 className="w-4 h-4" />
+                            ) : (
+                              <Maximize2 className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  )}
+                  </motion.div>
+                ) : (
+                  // Native / cPanel HLS Video Slide with Integrated Interactive Video Play Bar
+                  <motion.div
+                    key={`video-${currentIndex}`}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
+                    onMouseMove={handleVideoMouseMove}
+                    className="w-full h-full flex items-center justify-center relative group"
+                  >
+                    <video
+                      ref={(el) => {
+                        videoRef.current = el;
+                        if (el) attachVideoSource(el, currentSlide);
+                      }}
+                      key={`video-${currentIndex}-${currentSlide.hls_location || currentSlide.location}`}
+                      poster={currentSlide.poster_location || currentSlide.thumbnail || currentSlide.image_location}
+                      src={currentSlide.fallback_location || currentSlide.video_location}
+                      autoPlay
+                      playsInline
+                      muted={isMuted}
+                      onLoadedMetadata={(e) => {
+                        const dur = e.currentTarget.duration;
+                        if (dur && !isNaN(dur) && isFinite(dur) && dur > 0) {
+                          setTimeLeft(Math.ceil(dur));
+                          setVideoProgress((prev) => ({ ...prev, duration: Math.ceil(dur) }));
+                        }
+                      }}
+                      onTimeUpdate={(e) => {
+                        if (Date.now() < seekLockUntilRef.current) {
+                          return;
+                        }
+                        const cur = e.currentTarget.currentTime;
+                        const dur = e.currentTarget.duration || currentSlide?.video_duration || 30;
+                        if (!isSeeking) {
+                          setVideoProgress((prev) => ({
+                            currentTime: cur,
+                            duration: (dur && dur > 0) ? Math.ceil(dur) : (prev.duration > 0 ? prev.duration : 30),
+                          }));
+                        }
+                        const remaining = Math.max(0, Math.ceil(dur - cur));
+                        if (!isNaN(remaining) && !showCompletionModal && !isPaused) {
+                          setTimeLeft(remaining);
+                        }
+                      }}
+                      onEnded={() => {
+                        setTimeLeft(0);
+                        if (currentIndex < activeSlides.length - 1) {
+                          setIsPaused(false); // Reset pause state so next slide auto-plays immediately
+                          goToSlide(currentIndex + 1);
+                        } else {
+                          setIsPaused(true);
+                          // Check presentationHeader.connect_with_us_popus (1 = yes [open ConnectModal at end of last slide], 2 = no [show completion modal])
+                          if (Number(presentationHeader?.connect_with_us_popus) === 1) {
+                            setIsConnectModalOpen(true);
+                          } else {
+                            setShowCompletionModal(true);
+                          }
+                        }
+                      }}
+                      onClick={handleTogglePlayPause}
+                      className="max-w-full max-h-full w-auto h-auto object-contain rounded-lg shadow-2xl cursor-pointer"
+                    />
 
-                </motion.div>
+                    {/* Sleek, Modern Cinematic Video Playbar Overlay */}
+                    <div
+                      className={`absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent pt-12 pb-3 px-4 sm:px-6 z-30 transition-all duration-300 pointer-events-auto rounded-b-xl ${
+                        isVideoControlsVisible || isPaused ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"
+                      }`}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {/* Interactive Scrubber Seekbar Track */}
+                      <div className="relative w-full flex items-center group/seek cursor-pointer mb-2.5 py-1">
+                        {/* Track Background */}
+                        <div className="w-full h-1 group-hover/seek:h-2 bg-white/20 rounded-full overflow-hidden transition-all duration-200 relative">
+                          <div
+                            className="h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full transition-all duration-75"
+                            style={{
+                              width: `${
+                                Math.min(100, Math.max(0, ((videoProgress.currentTime || 0) / (videoProgress.duration > 0 ? videoProgress.duration : 1)) * 100))
+                              }%`,
+                            }}
+                          />
+                        </div>
+
+                        {/* Interactive Range Input */}
+                        <input
+                          type="range"
+                          min={0}
+                          max={videoProgress.duration > 0 ? videoProgress.duration : 100}
+                          step={0.1}
+                          value={videoProgress.currentTime || 0}
+                          onPointerDown={() => setIsSeeking(true)}
+                          onPointerUp={(e) => {
+                            setIsSeeking(false);
+                            handleVideoSeek(parseFloat(e.currentTarget.value));
+                          }}
+                          onChange={(e) => {
+                            const val = parseFloat(e.target.value) || 0;
+                            setVideoProgress((prev) => ({ ...prev, currentTime: val }));
+                            handleVideoSeek(val);
+                          }}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                          aria-label="Seek Video"
+                        />
+
+                        {/* Glowing Circular Handle */}
+                        <div
+                          className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-white rounded-full shadow-[0_0_10px_rgba(245,158,11,0.9)] border-2 border-amber-500 pointer-events-none transition-transform duration-150 scale-0 group-hover/seek:scale-100"
+                          style={{
+                            left: `${
+                              Math.min(100, Math.max(0, ((videoProgress.currentTime || 0) / (videoProgress.duration > 0 ? videoProgress.duration : 1)) * 100))
+                            }%`,
+                          }}
+                        />
+                      </div>
+
+                      {/* Controls Bottom Row: Play/Pause, Volume, Time & Fullscreen */}
+                      <div className="flex items-center justify-between text-white select-none">
+                        <div className="flex items-center gap-2.5 sm:gap-3">
+                          {/* Play/Pause */}
+                          <button
+                            type="button"
+                            onClick={handleTogglePlayPause}
+                            className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/15 text-white transition-all cursor-pointer hover:scale-110 active:scale-95"
+                            title={isPaused ? "Play" : "Pause"}
+                          >
+                            {isPaused ? (
+                              <Play className="w-4 h-4 fill-white ml-0.5" />
+                            ) : (
+                              <Pause className="w-4 h-4 fill-white" />
+                            )}
+                          </button>
+
+                          {/* Sound Toggle */}
+                          <button
+                            type="button"
+                            onClick={() => setIsMuted((prev) => !prev)}
+                            className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/15 text-white/90 hover:text-white transition-all cursor-pointer hover:scale-110 active:scale-95"
+                            title={isMuted ? "Unmute" : "Mute"}
+                          >
+                            {isMuted ? (
+                              <VolumeX className="w-4 h-4 text-rose-400" />
+                            ) : (
+                              <Volume2 className="w-4 h-4 text-emerald-400" />
+                            )}
+                          </button>
+
+                          {/* Digital Timestamp Display */}
+                          <div className="flex items-center text-xs font-mono tracking-tight font-medium ml-1">
+                            <span className="text-white font-semibold">
+                              {formatVideoTime(videoProgress.currentTime)}
+                            </span>
+                            <span className="text-white/40 mx-1.5 font-normal">/</span>
+                            <span className="text-white/60">
+                              {formatVideoTime(videoProgress.duration)}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          {/* Fullscreen Button */}
+                          <button
+                            type="button"
+                            onClick={toggleFullScreen}
+                            className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/15 text-white/90 hover:text-white transition-all cursor-pointer hover:scale-110 active:scale-95"
+                            title={isFullScreen ? "Exit Fullscreen" : "Fullscreen"}
+                          >
+                            {isFullScreen ? (
+                              <Minimize2 className="w-4 h-4" />
+                            ) : (
+                              <Maximize2 className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Subtle Center Play indicator overlay when paused */}
+                    {isPaused && (
+                      <div
+                        onClick={handleTogglePlayPause}
+                        className="absolute inset-0 flex items-center justify-center pointer-events-none z-20"
+                      >
+                        <div className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-xl">
+                          <Play className="w-5 h-5 text-white fill-white ml-0.5" />
+                        </div>
+                      </div>
+                    )}
+
+                  </motion.div>
+                )
               ) : (
                 <motion.div
                   key={`img-wrap-${currentIndex}`}
